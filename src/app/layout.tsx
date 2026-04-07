@@ -15,6 +15,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ReiLabs",
   description: "Internal blog with Supabase auth and Postgres",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+  },
   robots: {
     index: false,
     follow: false,
