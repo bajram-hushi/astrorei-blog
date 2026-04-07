@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Header } from "@/components/header";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser, } from "@/lib/auth";
+import { formatEurCompact } from "@/lib/currency";
 import { getDefaultUsername } from "@/lib/profile";
 
 type Props = {
@@ -39,7 +40,7 @@ export default async function UserProfilePage({ params }: Props) {
 
   const [{ data: profile }, { data: posts }, { data: comments }] = await Promise.all([
     supabase.schema("blog").from("profiles").select("id, email, username, avatar_url, created_at").eq("id", id).maybeSingle(),
-    supabase.schema("blog").from("posts").select("id, title, created_at").eq("author_id", id).order("created_at", { ascending: false }),
+    supabase.schema("blog").from("posts").select("id, title, created_at, investment_eur").eq("author_id", id).order("created_at", { ascending: false }),
     supabase.schema("blog").from("comments").select("id, body, post_id, created_at").eq("author_id", id).order("created_at", { ascending: false }).limit(50),
   ]);
 
@@ -73,6 +74,8 @@ export default async function UserProfilePage({ params }: Props) {
     totalVotesReceived = Array.from(commentScoreMap.values()).reduce((sum, s) => sum + s, 0);
   }
 
+  const totalAngelInvestment = (posts ?? []).reduce((sum, post) => sum + (post.investment_eur ?? 0), 0);
+
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : null;
@@ -99,11 +102,12 @@ export default async function UserProfilePage({ params }: Props) {
         </div>
 
         {/* ── Stats ── */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             { label: "Posts", value: posts?.length ?? 0 },
             { label: "Comments", value: comments?.length ?? 0 },
             { label: "Votes received", value: totalVotesReceived },
+            { label: "Angel invested", value: `EUR ${formatEurCompact(totalAngelInvestment)}` },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-lg border border-zinc-200 bg-white p-4 text-center">
               <p className="text-2xl font-bold">{value}</p>

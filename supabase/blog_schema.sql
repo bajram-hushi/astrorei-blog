@@ -24,9 +24,43 @@ create table if not exists blog.posts (
   title text not null check (char_length(title) between 1 and 140),
   content text not null,
   content_format text not null check (content_format in ('markdown', 'richtext')),
+  investment_eur integer,
+  investment_confidence smallint,
+  investment_thesis text,
+  investment_model text,
+  investment_created_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table blog.posts
+add column if not exists investment_eur integer;
+
+alter table blog.posts
+add column if not exists investment_confidence smallint;
+
+alter table blog.posts
+add column if not exists investment_thesis text;
+
+alter table blog.posts
+add column if not exists investment_model text;
+
+alter table blog.posts
+add column if not exists investment_created_at timestamptz;
+
+alter table blog.posts
+drop constraint if exists posts_investment_non_negative;
+
+alter table blog.posts
+add constraint posts_investment_non_negative
+check (investment_eur is null or investment_eur >= 0);
+
+alter table blog.posts
+drop constraint if exists posts_investment_confidence_range;
+
+alter table blog.posts
+add constraint posts_investment_confidence_range
+check (investment_confidence is null or investment_confidence between 1 and 100);
 
 create table if not exists blog.comments (
   id uuid primary key default gen_random_uuid(),

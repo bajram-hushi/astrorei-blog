@@ -1,16 +1,34 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { addComment, voteComment } from "@/app/actions";
+import { addComment, evaluatePostInvestment, voteComment } from "@/app/actions";
 import { Header } from "@/components/header";
 import { PostContent } from "@/components/post-content";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser } from "@/lib/auth";
 import { BlogProfile } from "@/lib/profile";
+import { formatEurCompact } from "@/lib/currency";
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; detail?: string }>;
+  searchParams: Promise<{ error?: string; detail?: string; eval_status?: string; eval_detail?: string }>;
 };
+
+function evalMessage(status?: string, detail?: string) {
+  switch (status) {
+    case "evaluated":
+      return { tone: "success", text: "Angel investor evaluation completed." } as const;
+    case "already_evaluated":
+      return { tone: "info", text: "This post was already evaluated." } as const;
+    case "missing_openai_key":
+      return { tone: "error", text: "OPENAI_API_KEY is missing. Add it to your environment and retry." } as const;
+    case "evaluation_failed":
+      return { tone: "error", text: "OpenAI evaluation failed. Check model/key and try again." } as const;
+    case "db_update_failed":
+      return { tone: "error", text: detail ? `Could not save evaluation: ${detail}` : "Could not save evaluation." } as const;
+    default:
+      return null;
+  }
+}
 
 type CommentRow = {
   id: string;
@@ -24,6 +42,7 @@ type CommentRow = {
 export default async function PostPage({ params, searchParams }: Props) {
   const { id } = await params;
   const query = await searchParams;
+  const evalState = evalMessage(query.eval_status, query.eval_detail);
 
   const supabase = await createClient();
   const {
@@ -37,7 +56,7 @@ export default async function PostPage({ params, searchParams }: Props) {
   const { data: post } = await supabase
     .schema("blog")
     .from("posts")
-    .select("id, title, content, content_format, created_at, author_id, author_email")
+    .select("id, title, content, content_format, created_at, author_id, author_email, investment_eur, investment_confidence, investment_thesis")
     .eq("id", id)
     .single();
 
@@ -198,6 +217,19 @@ export default async function PostPage({ params, searchParams }: Props) {
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto w-full max-w-4xl px-4 py-8">
+        {evalState && (
+          <p
+            className={`mb-4 rounded-md border p-3 text-sm ${
+              evalState.tone === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : evalState.tone === "info"
+                  ? "border-zinc-200 bg-zinc-50 text-zinc-700"
+                  : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            {evalState.text}
+          </p>
+        )}
         <article className="rounded-lg border border-zinc-200 bg-white p-6">
           <h1 className="text-3xl font-bold tracking-tight">{postData.title}</h1>
           <div className="mt-2 flex items-center gap-2 text-sm text-zinc-600">
@@ -229,6 +261,30 @@ export default async function PostPage({ params, searchParams }: Props) {
               format={postData.content_format as "markdown" | "richtext"}
             />
           </div>
+          {postData.investment_eur !== null && postData.investment_eur !== undefined && (
+            <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Angel Investor Decision</p>
+              <p className="mt-1 text-lg font-bold text-emerald-900">
+                EUR {formatEurCompact(postData.investment_eur)}
+                {postData.investment_confidence ? ` (${postData.investment_confidence}% confidence)` : ""}
+              </p>
+              {postData.investment_thesis && (
+                <p className="mt-1 text-sm text-emerald-900/85">{postData.investment_thesis}</p>
+              )}
+            </div>
+          )}
+          {(postData.investment_eur === null || postData.investment_eur === undefined) && (
+            <form action={evaluatePostInvestment} className="mt-6">
+              <input type="hidden" name="post_id" value={postData.id} />
+              <input type="hidden" name="redirect_to" value={`/post/${postData.id}`} />
+              <button
+                type="submit"
+                className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+              >
+                Evaluate with Angel Investor
+              </button>
+            </form>
+          )}
         </article>
 
         <section className="mt-8 rounded-lg border border-zinc-200 bg-white p-6">

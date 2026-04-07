@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser } from "@/lib/auth";
+import { evaluateAngelInvestment } from "@/lib/angel-investor";
 
 async function requireAllowedUser() {
   const supabase = await createClient();
@@ -17,6 +18,62 @@ async function requireAllowedUser() {
   }
 
   return { supabase, user };
+}
+
+async function runAngelEvaluationForPost(params: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  postId: string;
+  title: string;
+  content: string;
+  contentFormat: "markdown" | "richtext";
+}) {
+  if (!process.env.OPENAI_API_KEY?.trim()) {
+    return { ok: false as const, status: "missing_openai_key" as const };
+  }
+
+  const angelResult = await evaluateAngelInvestment({
+    title: params.title,
+    content: params.content,
+    contentFormat: params.contentFormat,
+  });
+
+  if (!angelResult) {
+    return { ok: false as const, status: "evaluation_failed" as const };
+  }
+
+  const { error: updateError } = await params.supabase
+    .schema("blog")
+    .from("posts")
+    .update({
+      investment_eur: angelResult.amountEur,
+      investment_confidence: angelResult.confidence,
+      investment_thesis: angelResult.thesis,
+      investment_model: angelResult.model,
+      investment_created_at: new Date().toISOString(),
+    })
+    .eq("id", params.postId);
+
+  if (updateError) {
+    return {
+      ok: false as const,
+      status: "db_update_failed" as const,
+      detail: updateError.message || updateError.code || "update_failed",
+    };
+  }
+
+  return { ok: true as const, status: "evaluated" as const };
+}
+
+function appendEvalStatus(path: string, status: string, detail?: string) {
+  const [pathname, existingQuery = ""] = path.split("?");
+  const params = new URLSearchParams(existingQuery);
+  params.set("eval_status", status);
+  if (detail) {
+    params.set("eval_detail", detail);
+  } else {
+    params.delete("eval_detail");
+  }
+  return `${pathname}?${params.toString()}`;
 }
 
 export async function signOut() {
@@ -40,19 +97,77 @@ export async function createPost(formData: FormData) {
     redirect("/new?error=invalid_content_format");
   }
 
-  const { error } = await supabase.schema("blog").from("posts").insert({
-    title,
-    content,
-    content_format: contentFormat,
-  });
+  const { data: insertedPost, error } = await supabase
+    .schema("blog")
+    .from("posts")
+    .insert({
+      title,
+      content,
+      content_format: contentFormat,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     const detail = encodeURIComponent(error.message || error.code || "unknown_error");
     redirect(`/new?error=create_post_failed&detail=${detail}`);
   }
 
+  if (insertedPost?.id) {
+    await runAngelEvaluationForPost({
+      supabase,
+      postId: insertedPost.id,
+      title,
+      content,
+      contentFormat: contentFormat as "markdown" | "richtext",
+    });
+  }
+
   revalidatePath("/");
   redirect("/");
+}
+
+export async function evaluatePostInvestment(formData: FormData) {
+  const { supabase } = await requireAllowedUser();
+
+  const postId = String(formData.get("post_id") ?? "").trim();
+  const redirectToRaw = String(formData.get("redirect_to") ?? "/").trim();
+  const redirectTo = redirectToRaw.startsWith("/") ? redirectToRaw : "/";
+
+  if (!postId) {
+    redirect(appendEvalStatus(redirectTo, "missing_post_id"));
+  }
+
+  const { data: post } = await supabase
+    .schema("blog")
+    .from("posts")
+    .select("id, title, content, content_format, investment_eur")
+    .eq("id", postId)
+    .maybeSingle();
+
+  if (!post) {
+    redirect(appendEvalStatus(redirectTo, "post_not_found"));
+  }
+
+  if (post.investment_eur !== null && post.investment_eur !== undefined) {
+    redirect(appendEvalStatus(redirectTo, "already_evaluated"));
+  }
+
+  const result = await runAngelEvaluationForPost({
+      supabase,
+      postId: post.id,
+      title: post.title,
+      content: post.content,
+      contentFormat: post.content_format as "markdown" | "richtext",
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/post/${post.id}`);
+  if (result.ok) {
+    redirect(appendEvalStatus(redirectTo, "evaluated"));
+  }
+
+  redirect(appendEvalStatus(redirectTo, result.status, result.detail));
 }
 
 export async function addComment(formData: FormData) {

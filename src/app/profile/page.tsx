@@ -4,6 +4,7 @@ import { Header } from "@/components/header";
 import { updateProfile } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser } from "@/lib/auth";
+import { formatEurCompact } from "@/lib/currency";
 import { getDefaultUsername, resolveProfile } from "@/lib/profile";
 import { ProfileAvatarField } from "@/components/profile-avatar-field";
 
@@ -41,7 +42,7 @@ export default async function ProfilePage({ searchParams }: Props) {
 
   const [{ data: profile }, { data: myPosts }, { data: myComments }] = await Promise.all([
     supabase.schema("blog").from("profiles").select("id, email, username, avatar_url, created_at").eq("id", user.id).maybeSingle(),
-    supabase.schema("blog").from("posts").select("id, title, created_at").eq("author_id", user.id).order("created_at", { ascending: false }),
+    supabase.schema("blog").from("posts").select("id, title, created_at, investment_eur").eq("author_id", user.id).order("created_at", { ascending: false }),
     supabase.schema("blog").from("comments").select("id, body, post_id, created_at").eq("author_id", user.id).order("created_at", { ascending: false }).limit(50),
   ]);
 
@@ -68,6 +69,8 @@ export default async function ProfilePage({ searchParams }: Props) {
     }
     totalVotesReceived = Array.from(commentScoreMap.values()).reduce((sum, s) => sum + s, 0);
   }
+
+  const totalAngelInvestment = (myPosts ?? []).reduce((sum, post) => sum + (post.investment_eur ?? 0), 0);
 
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
@@ -96,11 +99,12 @@ export default async function ProfilePage({ searchParams }: Props) {
         </div>
 
         {/* ── Activity stats ── */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             { label: "Posts", value: myPosts?.length ?? 0 },
             { label: "Comments", value: myComments?.length ?? 0 },
             { label: "Votes received", value: totalVotesReceived },
+            { label: "Angel invested", value: `EUR ${formatEurCompact(totalAngelInvestment)}` },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-lg border border-zinc-200 bg-white p-4 text-center">
               <p className="text-2xl font-bold">{value}</p>
