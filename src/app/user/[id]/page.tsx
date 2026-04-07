@@ -1,21 +1,13 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Header } from "@/components/header";
-import { updateProfile } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
-import { isAllowedUser } from "@/lib/auth";
-import { getDefaultUsername, resolveProfile } from "@/lib/profile";
-import { ProfileAvatarField } from "@/components/profile-avatar-field";
+import { isAllowedUser, } from "@/lib/auth";
+import { getDefaultUsername } from "@/lib/profile";
 
 type Props = {
-  searchParams: Promise<{ error?: string; success?: string }>;
+  params: Promise<{ id: string }>;
 };
-
-function errorText(error?: string) {
-  if (!error) return "";
-  if (error === "invalid_username") return "Username must be between 2 and 50 characters.";
-  return `Could not update profile: ${error}`;
-}
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -28,27 +20,39 @@ function timeAgo(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export default async function ProfilePage({ searchParams }: Props) {
-  const params = await searchParams;
+export default async function UserProfilePage({ params }: Props) {
+  const { id } = await params;
   const supabase = await createClient();
+
   const {
-    data: { user },
+    data: { user: currentUser },
   } = await supabase.auth.getUser();
 
-  if (!user || !isAllowedUser(user)) {
+  if (!isAllowedUser(currentUser)) {
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: myPosts }, { data: myComments }] = await Promise.all([
-    supabase.schema("blog").from("profiles").select("id, email, username, avatar_url, created_at").eq("id", user.id).maybeSingle(),
-    supabase.schema("blog").from("posts").select("id, title, created_at").eq("author_id", user.id).order("created_at", { ascending: false }),
-    supabase.schema("blog").from("comments").select("id, body, post_id, created_at").eq("author_id", user.id).order("created_at", { ascending: false }).limit(50),
+  // If viewing own profile, redirect to the full edit-capable profile page
+  if (currentUser?.id === id) {
+    redirect("/profile");
+  }
+
+  const [{ data: profile }, { data: posts }, { data: comments }] = await Promise.all([
+    supabase.schema("blog").from("profiles").select("id, email, username, avatar_url, created_at").eq("id", id).maybeSingle(),
+    supabase.schema("blog").from("posts").select("id, title, created_at").eq("author_id", id).order("created_at", { ascending: false }),
+    supabase.schema("blog").from("comments").select("id, body, post_id, created_at").eq("author_id", id).order("created_at", { ascending: false }).limit(50),
   ]);
 
-  const resolved = resolveProfile(user, profile);
+  // Need at least a profile or some activity to show the page
+  if (!profile && !posts?.length && !comments?.length) {
+    notFound();
+  }
 
-  // Fetch post titles for the user's comments
-  const commentPostIds = Array.from(new Set((myComments ?? []).map((c) => c.post_id)));
+  const username = profile?.username?.trim() || getDefaultUsername({ id, email: profile?.email ?? "" } as never);
+  const avatarUrl = profile?.avatar_url?.trim() ?? null;
+
+  // Fetch post titles for the comments
+  const commentPostIds = Array.from(new Set((comments ?? []).map((c) => c.post_id)));
   let postTitleMap = new Map<string, string>();
   if (commentPostIds.length) {
     const { data: commentPosts } = await supabase
@@ -56,13 +60,13 @@ export default async function ProfilePage({ searchParams }: Props) {
     postTitleMap = new Map((commentPosts ?? []).map((p) => [p.id, p.title]));
   }
 
-  // Tally votes received on the user's own comments
-  const myCommentIds = (myComments ?? []).map((c) => c.id);
-  let totalVotesReceived = 0;
+  // Fetch vote scores per comment
+  const commentIds = (comments ?? []).map((c) => c.id);
   const commentScoreMap = new Map<string, number>();
-  if (myCommentIds.length) {
+  let totalVotesReceived = 0;
+  if (commentIds.length) {
     const { data: votes } = await supabase
-      .schema("blog").from("comment_votes").select("comment_id, vote").in("comment_id", myCommentIds);
+      .schema("blog").from("comment_votes").select("comment_id, vote").in("comment_id", commentIds);
     for (const v of votes ?? []) {
       commentScoreMap.set(v.comment_id, (commentScoreMap.get(v.comment_id) ?? 0) + v.vote);
     }
@@ -80,26 +84,25 @@ export default async function ProfilePage({ searchParams }: Props) {
 
         {/* ── Profile header ── */}
         <div className="flex items-center gap-5 rounded-xl border border-zinc-200 bg-white p-6">
-          {resolved.avatarUrl ? (
+          {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={resolved.avatarUrl} alt="Profile avatar" className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-100" />
+            <img src={avatarUrl} alt={`${username}'s avatar`} className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-100" />
           ) : (
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xl font-bold text-zinc-600">
-              {resolved.username.slice(0, 1).toUpperCase()}
+              {username.slice(0, 1).toUpperCase()}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold truncate">{resolved.username}</p>
-            <p className="text-sm text-zinc-500 truncate">{user.email}</p>
+            <p className="text-xl font-bold truncate">{username}</p>
             {memberSince && <p className="text-xs text-zinc-400 mt-0.5">Member since {memberSince}</p>}
           </div>
         </div>
 
-        {/* ── Activity stats ── */}
+        {/* ── Stats ── */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Posts", value: myPosts?.length ?? 0 },
-            { label: "Comments", value: myComments?.length ?? 0 },
+            { label: "Posts", value: posts?.length ?? 0 },
+            { label: "Comments", value: comments?.length ?? 0 },
             { label: "Votes received", value: totalVotesReceived },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-lg border border-zinc-200 bg-white p-4 text-center">
@@ -111,12 +114,12 @@ export default async function ProfilePage({ searchParams }: Props) {
 
         {/* ── Posts ── */}
         <section>
-          <h2 className="mb-3 text-base font-semibold">Your Posts</h2>
-          {!myPosts?.length ? (
-            <p className="text-sm text-zinc-500">No posts yet. <Link href="/new" className="underline">Write your first post.</Link></p>
+          <h2 className="mb-3 text-base font-semibold">Posts by {username}</h2>
+          {!posts?.length ? (
+            <p className="text-sm text-zinc-500">No posts yet.</p>
           ) : (
             <ul className="space-y-2">
-              {myPosts.map((post) => (
+              {posts.map((post) => (
                 <li key={post.id} className="flex items-baseline justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3 gap-3">
                   <Link href={`/post/${post.id}`} className="font-medium hover:underline truncate">
                     {post.title}
@@ -130,12 +133,12 @@ export default async function ProfilePage({ searchParams }: Props) {
 
         {/* ── Comments ── */}
         <section>
-          <h2 className="mb-3 text-base font-semibold">Your Comments</h2>
-          {!myComments?.length ? (
+          <h2 className="mb-3 text-base font-semibold">Comments by {username}</h2>
+          {!comments?.length ? (
             <p className="text-sm text-zinc-500">No comments yet.</p>
           ) : (
             <ul className="space-y-2">
-              {myComments.map((comment) => {
+              {comments.map((comment) => {
                 const postTitle = postTitleMap.get(comment.post_id) ?? "Untitled post";
                 const snippet = comment.body.replace(/<[^>]+>/g, "").slice(0, 120);
                 const score = commentScoreMap.get(comment.id) ?? 0;
@@ -166,50 +169,6 @@ export default async function ProfilePage({ searchParams }: Props) {
               })}
             </ul>
           )}
-        </section>
-
-        {/* ── Edit profile ── */}
-        <section>
-          <details className="group rounded-xl border border-zinc-200 bg-white">
-            <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold select-none">
-              Edit profile
-              <svg className="h-4 w-4 text-zinc-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div className="border-t border-zinc-100 px-5 py-4">
-              <p className="mb-4 text-sm text-zinc-500">Customize how your identity appears across posts and comments.</p>
-
-              {params.error && (
-                <p className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  {errorText(params.error)}
-                </p>
-              )}
-              {params.success && (
-                <p className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-                  Profile updated.
-                </p>
-              )}
-
-              <form action={updateProfile} className="space-y-4">
-                <label className="block space-y-1">
-                  <span className="text-sm font-semibold">Username</span>
-                  <input
-                    name="username"
-                    required
-                    defaultValue={profile?.username ?? getDefaultUsername(user)}
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2"
-                  />
-                </label>
-
-                <ProfileAvatarField defaultValue={profile?.avatar_url ?? ""} />
-
-                <button type="submit" className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-700">
-                  Save profile
-                </button>
-              </form>
-            </div>
-          </details>
         </section>
 
       </main>

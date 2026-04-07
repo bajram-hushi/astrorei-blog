@@ -61,29 +61,33 @@ export default async function Home() {
                 {post.title}
               </Link>
               <div className="mt-2 flex items-center gap-2 text-sm text-zinc-600">
-                {profileMap.get(post.author_id)?.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={profileMap.get(post.author_id)?.avatar_url ?? ""}
-                    alt="Author avatar"
-                    className="h-6 w-6 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-300 text-[10px] font-semibold text-zinc-700">
-                    {(
-                      profileMap.get(post.author_id)?.username ??
-                      post.author_email ??
-                      "u"
-                    )
-                      .slice(0, 1)
-                      .toUpperCase()}
-                  </div>
-                )}
-                <span>
-                  {new Date(post.created_at).toLocaleString()} -{" "}
-                  {profileMap.get(post.author_id)?.username ??
-                    post.author_email}
-                </span>
+                <Link
+                  href={post.author_id === user?.id ? "/profile" : `/user/${post.author_id}`}
+                  className="flex items-center gap-1.5 hover:underline"
+                >
+                  {profileMap.get(post.author_id)?.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profileMap.get(post.author_id)?.avatar_url ?? ""}
+                      alt="Author avatar"
+                      className="h-6 w-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-300 text-[10px] font-semibold text-zinc-700">
+                      {(
+                        profileMap.get(post.author_id)?.username ??
+                        post.author_email ??
+                        "u"
+                      )
+                        .slice(0, 1)
+                        .toUpperCase()}
+                    </div>
+                  )}
+                  <span>
+                    {profileMap.get(post.author_id)?.username ?? post.author_email}
+                  </span>
+                </Link>
+                <span className="text-zinc-400">{new Date(post.created_at).toLocaleString()}</span>
               </div>
             </article>
           ))}

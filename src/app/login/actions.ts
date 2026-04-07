@@ -1,21 +1,21 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-function appUrl() {
-  const fallback = process.env.NEXT_PUBLIC_APP_URL?.trim();
-
-  if (fallback) {
-    return fallback.replace(/\/+$/, "");
-  }
-
-  return "http://localhost:3333";
+async function appUrl() {
+  // Derive origin from the real incoming request so this works on both
+  // localhost and any deployed environment without env-var changes.
+  const hdrs = await headers();
+  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3333";
+  const proto = hdrs.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
 }
 
 export async function loginWithGoogle() {
   const supabase = await createClient();
-  const origin = appUrl();
+  const origin = await appUrl();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -75,7 +75,7 @@ export async function signUpAstrorei(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${appUrl()}/auth/callback`,
+      emailRedirectTo: `${await appUrl()}/auth/callback`,
     },
   });
 

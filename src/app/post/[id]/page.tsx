@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { addComment, voteComment } from "@/app/actions";
 import { Header } from "@/components/header";
@@ -140,21 +141,25 @@ export default async function PostPage({ params, searchParams }: Props) {
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-[11px] text-zinc-600">
-              {profile?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profile.avatar_url}
-                  alt="Comment author avatar"
-                  className="h-4 w-4 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-zinc-300 text-[9px] font-semibold text-zinc-700">
-                  {(profile?.username ?? comment.author_email ?? "u").slice(0, 1).toUpperCase()}
-                </div>
-              )}
-              <span>
-                {profile?.username ?? comment.author_email} - {new Date(comment.created_at).toLocaleString()}
-              </span>
+              <Link
+                href={comment.author_id === user?.id ? "/profile" : `/user/${comment.author_id}`}
+                className="flex items-center gap-1 hover:underline"
+              >
+                {profile?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profile.avatar_url}
+                    alt="Comment author avatar"
+                    className="h-4 w-4 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-4 w-4 items-center justify-center rounded-full bg-zinc-300 text-[9px] font-semibold text-zinc-700">
+                    {(profile?.username ?? comment.author_email ?? "u").slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <span>{profile?.username ?? comment.author_email}</span>
+              </Link>
+              <span className="text-zinc-400">· {new Date(comment.created_at).toLocaleString()}</span>
             </div>
 
             <p className="mt-1 whitespace-pre-wrap text-[13px] leading-5">{comment.body}</p>
@@ -196,23 +201,27 @@ export default async function PostPage({ params, searchParams }: Props) {
         <article className="rounded-lg border border-zinc-200 bg-white p-6">
           <h1 className="text-3xl font-bold tracking-tight">{postData.title}</h1>
           <div className="mt-2 flex items-center gap-2 text-sm text-zinc-600">
-            {profileMap.get(postData.author_id)?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profileMap.get(postData.author_id)?.avatar_url ?? ""}
-                alt="Author avatar"
-                className="h-7 w-7 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-300 text-xs font-semibold text-zinc-700">
-                {(profileMap.get(postData.author_id)?.username ?? postData.author_email ?? "u")
-                  .slice(0, 1)
-                  .toUpperCase()}
-              </div>
-            )}
-            <span>
-              {new Date(postData.created_at).toLocaleString()} - {profileMap.get(postData.author_id)?.username ?? postData.author_email}
-            </span>
+            <Link
+              href={postData.author_id === user?.id ? "/profile" : `/user/${postData.author_id}`}
+              className="flex items-center gap-1.5 hover:underline"
+            >
+              {profileMap.get(postData.author_id)?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profileMap.get(postData.author_id)?.avatar_url ?? ""}
+                  alt="Author avatar"
+                  className="h-7 w-7 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-300 text-xs font-semibold text-zinc-700">
+                  {(profileMap.get(postData.author_id)?.username ?? postData.author_email ?? "u")
+                    .slice(0, 1)
+                    .toUpperCase()}
+                </div>
+              )}
+              <span>{profileMap.get(postData.author_id)?.username ?? postData.author_email}</span>
+            </Link>
+            <span className="text-zinc-400">{new Date(postData.created_at).toLocaleString()}</span>
           </div>
           <div className="mt-6">
             <PostContent
