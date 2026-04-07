@@ -4,7 +4,7 @@ import { Header } from "@/components/header";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser } from "@/lib/auth";
 import { BlogProfile } from "@/lib/profile";
-
+import { Analytics } from "@vercel/analytics/next";
 export default async function Home() {
   const supabase = await createClient();
   const {
@@ -50,8 +50,14 @@ export default async function Home() {
 
         <div className="space-y-4">
           {posts?.map((post) => (
-            <article key={post.id} className="rounded-lg border border-zinc-200 bg-white p-4">
-              <Link href={`/post/${post.id}`} className="text-lg font-semibold hover:underline">
+            <article
+              key={post.id}
+              className="rounded-lg border border-zinc-200 bg-white p-4"
+            >
+              <Link
+                href={`/post/${post.id}`}
+                className="text-lg font-semibold hover:underline"
+              >
                 {post.title}
               </Link>
               <div className="mt-2 flex items-center gap-2 text-sm text-zinc-600">
@@ -64,13 +70,19 @@ export default async function Home() {
                   />
                 ) : (
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-300 text-[10px] font-semibold text-zinc-700">
-                    {(profileMap.get(post.author_id)?.username ?? post.author_email ?? "u")
+                    {(
+                      profileMap.get(post.author_id)?.username ??
+                      post.author_email ??
+                      "u"
+                    )
                       .slice(0, 1)
                       .toUpperCase()}
                   </div>
                 )}
                 <span>
-                  {new Date(post.created_at).toLocaleString()} - {profileMap.get(post.author_id)?.username ?? post.author_email}
+                  {new Date(post.created_at).toLocaleString()} -{" "}
+                  {profileMap.get(post.author_id)?.username ??
+                    post.author_email}
                 </span>
               </div>
             </article>
@@ -83,6 +95,7 @@ export default async function Home() {
           )}
         </div>
       </main>
+      <Analytics />
     </div>
   );
 }
