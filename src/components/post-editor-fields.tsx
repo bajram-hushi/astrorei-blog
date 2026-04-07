@@ -14,6 +14,7 @@ import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
 import Emoji from "@tiptap/extension-emoji";
 import { EmojiItem, emojis } from "@tiptap/extension-emoji";
+import { Markdown } from "@tiptap/markdown";
 import tippy, { Instance as TippyInstance } from "tippy.js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -103,6 +104,28 @@ const EmojiSuggestionList = forwardRef<EmojiSuggestionListRef, EmojiSuggestionLi
 
 EmojiSuggestionList.displayName = "EmojiSuggestionList";
 
+function looksLikeMarkdown(text: string) {
+  const normalized = text.trim();
+
+  if (!normalized || normalized.length < 3) {
+    return false;
+  }
+
+  return [
+    /^#{1,6}\s/m,
+    /^>\s/m,
+    /^[-*+]\s/m,
+    /^\d+\.\s/m,
+    /^-\s\[(?: |x|X)\]\s/m,
+    /```[\s\S]*```/m,
+    /`[^`]+`/m,
+    /\*\*[^*]+\*\*/m,
+    /~~[^~]+~~/m,
+    /==[^=]+==/m,
+    /!?\[[^\]]+\]\([^\)]+\)/m,
+  ].some((pattern) => pattern.test(normalized));
+}
+
 function ToolButton({
   label,
   active,
@@ -133,6 +156,7 @@ export function PostEditorFields() {
   const [uploading, setUploading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [emojiQuery, setEmojiQuery] = useState("");
+  const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
@@ -141,6 +165,7 @@ export function PostEditorFields() {
     immediatelyRender: false,
     extensions: [
       StarterKit,
+      Markdown,
       Underline,
       Image,
       TaskList,
@@ -238,6 +263,25 @@ export function PostEditorFields() {
     editorProps: {
       attributes: {
         class: "notion-editor",
+      },
+      handlePaste(view, event) {
+        const clipboardData = event.clipboardData;
+
+        if (!clipboardData) {
+          return false;
+        }
+
+        const html = clipboardData.getData("text/html");
+        const text = clipboardData.getData("text/plain");
+
+        if (html || !looksLikeMarkdown(text)) {
+          return false;
+        }
+
+        event.preventDefault();
+        view.dispatch(view.state.tr);
+        editor?.chain().focus().insertContent(text, { contentType: "markdown" }).run();
+        return true;
       },
     },
     onUpdate({ editor: instance }) {
@@ -494,11 +538,39 @@ export function PostEditorFields() {
         >
           Redo
         </button>
+        <button
+          type="button"
+          onClick={() => setShowMarkdownHelp((current) => !current)}
+          className="rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100"
+        >
+          Markdown
+        </button>
       </div>
 
       <div className="border-b border-zinc-200 bg-white px-4 py-2 text-xs text-zinc-500">
-        {stats.words} words, {stats.chars} chars. Tip: type `:` (or click Emoji) to pick emoji.
+        {stats.words} words, {stats.chars} chars. Tip: type markdown shortcuts like `#`, `&gt;`, `-`, `1.` or `- [ ]` while writing.
       </div>
+
+      {showMarkdownHelp && (
+        <div className="grid gap-2 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600 md:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <p className="font-semibold text-zinc-800">Headings</p>
+            <p>`#` `##` `###` then space</p>
+          </div>
+          <div>
+            <p className="font-semibold text-zinc-800">Lists</p>
+            <p>`-` `*` `+` or `1.` then space</p>
+          </div>
+          <div>
+            <p className="font-semibold text-zinc-800">Tasks</p>
+            <p>`- [ ]` or `- [x]` then space</p>
+          </div>
+          <div>
+            <p className="font-semibold text-zinc-800">Formatting</p>
+            <p>`&gt;` quote, `` `code` ``, `~~strike~~`, `==highlight==`</p>
+          </div>
+        </div>
+      )}
 
       <div className="p-5 md:p-6">
         {editor && (
