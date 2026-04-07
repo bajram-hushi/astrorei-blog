@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser } from "@/lib/auth";
 import { evaluateAngelInvestment } from "@/lib/angel-investor";
+import { getUserInvestmentSummary } from "@/lib/investments";
 
 async function requireAllowedUser() {
   const supabase = await createClient();
@@ -72,6 +73,18 @@ function appendEvalStatus(path: string, status: string, detail?: string) {
     params.set("eval_detail", detail);
   } else {
     params.delete("eval_detail");
+  }
+  return `${pathname}?${params.toString()}`;
+}
+
+function appendInvestStatus(path: string, status: string, detail?: string) {
+  const [pathname, existingQuery = ""] = path.split("?");
+  const params = new URLSearchParams(existingQuery);
+  params.set("invest_status", status);
+  if (detail) {
+    params.set("invest_detail", detail);
+  } else {
+    params.delete("invest_detail");
   }
   return `${pathname}?${params.toString()}`;
 }
@@ -168,6 +181,53 @@ export async function evaluatePostInvestment(formData: FormData) {
   }
 
   redirect(appendEvalStatus(redirectTo, result.status, result.detail));
+}
+
+export async function investInPost(formData: FormData) {
+  const { supabase, user } = await requireAllowedUser();
+
+  const postId = String(formData.get("post_id") ?? "").trim();
+  const redirectToRaw = String(formData.get("redirect_to") ?? "/").trim();
+  const redirectTo = redirectToRaw.startsWith("/") ? redirectToRaw : "/";
+  const amount = Number(String(formData.get("amount") ?? "").trim());
+
+  if (!postId) {
+    redirect(appendInvestStatus(redirectTo, "missing_post_id"));
+  }
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    redirect(appendInvestStatus(redirectTo, "invalid_amount"));
+  }
+
+  const { data: resultRows, error } = await supabase.rpc("invest_in_post", {
+    target_post_id: postId,
+    investment_amount: Math.round(amount),
+  });
+
+  if (error) {
+    redirect(appendInvestStatus(redirectTo, "db_update_failed", error.message || error.code || "investment_failed"));
+  }
+
+  const result = Array.isArray(resultRows) ? resultRows[0] : null;
+  const status = typeof result?.status === "string" ? result.status : "db_update_failed";
+  const detail = typeof result?.detail === "string" ? result.detail : undefined;
+
+  revalidatePath("/");
+  revalidatePath(`/post/${postId}`);
+  revalidatePath("/profile");
+  revalidatePath(`/user/${user.id}`);
+
+  const { data: post } = await supabase.schema("blog").from("posts").select("author_id").eq("id", postId).maybeSingle();
+  if (post?.author_id) {
+    revalidatePath(post.author_id === user.id ? "/profile" : `/user/${post.author_id}`);
+  }
+
+  if (status === "invested") {
+    const summary = await getUserInvestmentSummary(supabase, user.id);
+    redirect(appendInvestStatus(redirectTo, status, String(summary.availableToInvest)));
+  }
+
+  redirect(appendInvestStatus(redirectTo, status, detail));
 }
 
 export async function addComment(formData: FormData) {

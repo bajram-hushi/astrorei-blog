@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { addComment, evaluatePostInvestment, voteComment } from "@/app/actions";
+import { addComment, evaluatePostInvestment, investInPost, voteComment } from "@/app/actions";
 import { Header } from "@/components/header";
 import { PostContent } from "@/components/post-content";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser } from "@/lib/auth";
 import { BlogProfile } from "@/lib/profile";
 import { formatEurCompact } from "@/lib/currency";
+import { getUserInvestmentSummary, sumAmounts } from "@/lib/investments";
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; detail?: string; eval_status?: string; eval_detail?: string }>;
+  searchParams: Promise<{ error?: string; detail?: string; eval_status?: string; eval_detail?: string; invest_status?: string; invest_detail?: string }>;
 };
 
 function evalMessage(status?: string, detail?: string) {
@@ -30,6 +31,33 @@ function evalMessage(status?: string, detail?: string) {
   }
 }
 
+function investMessage(status?: string, detail?: string) {
+  switch (status) {
+    case "invested":
+      return {
+        tone: "success",
+        text: detail ? `Investment placed. Remaining balance: EUR ${formatEurCompact(Number(detail))}.` : "Investment placed.",
+      } as const;
+    case "insufficient_funds":
+      return {
+        tone: "error",
+        text: `Insufficient balance. You can invest up to EUR ${formatEurCompact(Number(detail ?? 0))}.`,
+      } as const;
+    case "own_post":
+      return { tone: "error", text: "You cannot invest in your own post." } as const;
+    case "invalid_amount":
+      return { tone: "error", text: "Enter a positive investment amount." } as const;
+    case "missing_post_id":
+      return { tone: "error", text: "Missing post id for investment." } as const;
+    case "post_not_found":
+      return { tone: "error", text: "Post not found for investment." } as const;
+    case "db_update_failed":
+      return { tone: "error", text: detail ? `Could not save investment: ${detail}` : "Could not save investment." } as const;
+    default:
+      return null;
+  }
+}
+
 type CommentRow = {
   id: string;
   body: string;
@@ -43,13 +71,14 @@ export default async function PostPage({ params, searchParams }: Props) {
   const { id } = await params;
   const query = await searchParams;
   const evalState = evalMessage(query.eval_status, query.eval_detail);
+  const investState = investMessage(query.invest_status, query.invest_detail);
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!isAllowedUser(user)) {
+  if (!user || !isAllowedUser(user)) {
     redirect("/login");
   }
 
@@ -65,6 +94,15 @@ export default async function PostPage({ params, searchParams }: Props) {
   }
 
   const postData = post;
+
+  const [communityInvestmentResult, currentUserInvestmentSummary] = await Promise.all([
+    supabase.schema("blog").from("post_investments").select("investor_id, amount").eq("post_id", id),
+    getUserInvestmentSummary(supabase, user.id),
+  ]);
+
+  const communityInvestmentTotal = sumAmounts(communityInvestmentResult.data ?? []);
+  const myPostInvestment = (communityInvestmentResult.data ?? []).find((row) => row.investor_id === user.id)?.amount ?? 0;
+  const canInvestInPost = postData.author_id !== user.id;
 
   const { data: comments } = await supabase
     .schema("blog")
@@ -230,6 +268,17 @@ export default async function PostPage({ params, searchParams }: Props) {
             {evalState.text}
           </p>
         )}
+        {investState && (
+          <p
+            className={`mb-4 rounded-md border p-3 text-sm ${
+              investState.tone === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            {investState.text}
+          </p>
+        )}
         <article className="rounded-lg border border-zinc-200 bg-white p-6">
           <h1 className="text-3xl font-bold tracking-tight">{postData.title}</h1>
           <div className="mt-2 flex items-center gap-2 text-sm text-zinc-600">
@@ -273,6 +322,46 @@ export default async function PostPage({ params, searchParams }: Props) {
               )}
             </div>
           )}
+          <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Team Investment Pool</p>
+            <p className="mt-1 text-lg font-bold text-sky-950">EUR {formatEurCompact(communityInvestmentTotal)}</p>
+            {myPostInvestment > 0 && (
+              <p className="mt-1 text-sm text-sky-900/85">You have invested EUR {formatEurCompact(myPostInvestment)} in this post.</p>
+            )}
+            {canInvestInPost && (
+              <div className="mt-3 space-y-3">
+                <p className="text-sm text-sky-900/85">
+                  Available to invest: EUR {formatEurCompact(currentUserInvestmentSummary.availableToInvest)}
+                </p>
+                <form action={investInPost} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <input type="hidden" name="post_id" value={postData.id} />
+                  <input type="hidden" name="redirect_to" value={`/post/${postData.id}`} />
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-sky-800">Invest amount (EUR)</span>
+                    <input
+                      type="number"
+                      name="amount"
+                      min="1"
+                      max={Math.max(currentUserInvestmentSummary.availableToInvest, 1)}
+                      step="1"
+                      defaultValue={Math.min(currentUserInvestmentSummary.availableToInvest, 1000) || 1}
+                      className="w-full rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-900 sm:w-40"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="rounded-md bg-sky-700 px-3 py-2 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={currentUserInvestmentSummary.availableToInvest <= 0}
+                  >
+                    Invest in Post
+                  </button>
+                </form>
+              </div>
+            )}
+            {!canInvestInPost && (
+              <p className="mt-2 text-sm text-sky-900/85">You cannot invest in your own post.</p>
+            )}
+          </div>
           {(postData.investment_eur === null || postData.investment_eur === undefined) && (
             <form action={evaluatePostInvestment} className="mt-6">
               <input type="hidden" name="post_id" value={postData.id} />

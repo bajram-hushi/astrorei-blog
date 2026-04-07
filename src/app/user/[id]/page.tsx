@@ -4,6 +4,7 @@ import { Header } from "@/components/header";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser, } from "@/lib/auth";
 import { formatEurCompact } from "@/lib/currency";
+import { getUserInvestmentSummary } from "@/lib/investments";
 import { getDefaultUsername } from "@/lib/profile";
 
 type Props = {
@@ -44,6 +45,8 @@ export default async function UserProfilePage({ params }: Props) {
     supabase.schema("blog").from("comments").select("id, body, post_id, created_at").eq("author_id", id).order("created_at", { ascending: false }).limit(50),
   ]);
 
+  const investmentSummary = await getUserInvestmentSummary(supabase, id);
+
   // Need at least a profile or some activity to show the page
   if (!profile && !posts?.length && !comments?.length) {
     notFound();
@@ -74,8 +77,6 @@ export default async function UserProfilePage({ params }: Props) {
     totalVotesReceived = Array.from(commentScoreMap.values()).reduce((sum, s) => sum + s, 0);
   }
 
-  const totalAngelInvestment = (posts ?? []).reduce((sum, post) => sum + (post.investment_eur ?? 0), 0);
-
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : null;
@@ -102,12 +103,13 @@ export default async function UserProfilePage({ params }: Props) {
         </div>
 
         {/* ── Stats ── */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
             { label: "Posts", value: posts?.length ?? 0 },
             { label: "Comments", value: comments?.length ?? 0 },
             { label: "Votes received", value: totalVotesReceived },
-            { label: "Angel invested", value: `EUR ${formatEurCompact(totalAngelInvestment)}` },
+            { label: "Angel invested", value: `EUR ${formatEurCompact(investmentSummary.totalAngelReceived)}` },
+            { label: "Team invested", value: `EUR ${formatEurCompact(investmentSummary.totalCommunityReceived)}` },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-lg border border-zinc-200 bg-white p-4 text-center">
               <p className="text-2xl font-bold">{value}</p>

@@ -98,6 +98,16 @@ create table if not exists blog.notifications (
   constraint notification_no_self check (recipient_id <> actor_id)
 );
 
+create table if not exists blog.post_investments (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references blog.posts (id) on delete cascade,
+  investor_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  amount integer not null check (amount > 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (post_id, investor_id)
+);
+
 grant select, insert, update, delete on blog.notifications to authenticated;
 
 create index if not exists idx_comments_post_parent_created_at
@@ -117,6 +127,12 @@ on blog.notifications (post_id);
 
 create index if not exists idx_notifications_comment_id
 on blog.notifications (comment_id);
+
+create index if not exists idx_post_investments_post_id
+on blog.post_investments (post_id);
+
+create index if not exists idx_post_investments_investor_id
+on blog.post_investments (investor_id);
 
 create table if not exists blog.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -180,6 +196,12 @@ before update on blog.comment_votes
 for each row
 execute procedure blog.set_updated_at();
 
+drop trigger if exists trg_post_investments_updated_at on blog.post_investments;
+create trigger trg_post_investments_updated_at
+before update on blog.post_investments
+for each row
+execute procedure blog.set_updated_at();
+
 drop trigger if exists trg_comments_validate_parent on blog.comments;
 create trigger trg_comments_validate_parent
 before insert or update of parent_id, post_id on blog.comments
@@ -191,6 +213,7 @@ alter table blog.comments enable row level security;
 alter table blog.profiles enable row level security;
 alter table blog.comment_votes enable row level security;
 alter table blog.notifications enable row level security;
+alter table blog.post_investments enable row level security;
 
 drop policy if exists posts_select_internal on blog.posts;
 create policy posts_select_internal
@@ -320,6 +343,95 @@ create policy notifications_delete_recipient
 on blog.notifications
 for delete
 using (blog.is_allowed_user() and auth.uid() = recipient_id);
+
+drop policy if exists post_investments_select_internal on blog.post_investments;
+create policy post_investments_select_internal
+on blog.post_investments
+for select
+using (blog.is_allowed_user());
+
+drop policy if exists post_investments_insert_own on blog.post_investments;
+create policy post_investments_insert_own
+on blog.post_investments
+for insert
+with check (blog.is_allowed_user() and auth.uid() = investor_id);
+
+drop policy if exists post_investments_update_own on blog.post_investments;
+create policy post_investments_update_own
+on blog.post_investments
+for update
+using (blog.is_allowed_user() and auth.uid() = investor_id)
+with check (blog.is_allowed_user() and auth.uid() = investor_id);
+
+create or replace function blog.invest_in_post(target_post_id uuid, investment_amount integer)
+returns table(status text, detail text)
+language plpgsql
+security invoker
+as $$
+declare
+  current_user_id uuid := auth.uid();
+  target_author_id uuid;
+  total_angel_received integer := 0;
+  total_community_received integer := 0;
+  total_spent integer := 0;
+  total_available integer := 0;
+begin
+  if not blog.is_allowed_user() or current_user_id is null then
+    return query select 'not_allowed'::text, 'Authentication required'::text;
+    return;
+  end if;
+
+  if investment_amount is null or investment_amount <= 0 then
+    return query select 'invalid_amount'::text, 'Investment amount must be positive'::text;
+    return;
+  end if;
+
+  select author_id into target_author_id
+  from blog.posts
+  where id = target_post_id;
+
+  if target_author_id is null then
+    return query select 'post_not_found'::text, 'Post not found'::text;
+    return;
+  end if;
+
+  if target_author_id = current_user_id then
+    return query select 'own_post'::text, 'You cannot invest in your own post'::text;
+    return;
+  end if;
+
+  select coalesce(sum(investment_eur), 0) into total_angel_received
+  from blog.posts
+  where author_id = current_user_id;
+
+  select coalesce(sum(pi.amount), 0) into total_community_received
+  from blog.post_investments pi
+  join blog.posts p on p.id = pi.post_id
+  where p.author_id = current_user_id;
+
+  select coalesce(sum(amount), 0) into total_spent
+  from blog.post_investments
+  where investor_id = current_user_id;
+
+  total_available := total_angel_received + total_community_received - total_spent;
+
+  if investment_amount > total_available then
+    return query select 'insufficient_funds'::text, total_available::text;
+    return;
+  end if;
+
+  insert into blog.post_investments (post_id, investor_id, amount)
+  values (target_post_id, current_user_id, investment_amount)
+  on conflict (post_id, investor_id)
+  do update set
+    amount = blog.post_investments.amount + excluded.amount,
+    updated_at = now();
+
+  return query select 'invested'::text, null::text;
+end;
+$$;
+
+grant execute on function blog.invest_in_post(uuid, integer) to authenticated;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
