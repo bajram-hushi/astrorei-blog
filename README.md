@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Astrorei Internal Blog
 
-## Getting Started
+Internal blog application with:
 
-First, run the development server:
+- Private content (authenticated users only)
+- Login via Google OAuth or `@astrorei.io` credentials
+- Post creation and comments
+- Markdown or rich text (HTML) content
+- Inline base64 images in content
+- Supabase Postgres using `blog` schema + RLS
+
+## Stack (Near 0-Cost Infra)
+
+- App: Next.js (App Router) deployed on Vercel free tier
+- Database/Auth: Supabase free tier (Postgres + Auth + RLS)
+- Storage: none required (images embedded as base64 in markdown/HTML)
+- Ops: no dedicated server, no container, no paid infra needed for small internal usage
+
+## 1) Configure Supabase
+
+1. Create a Supabase project.
+2. Enable Google provider in Auth -> Providers.
+3. In Supabase Auth -> URL Configuration, set Site URL to your app URL (for local: `http://localhost:3333`).
+4. In Supabase Auth -> URL Configuration, add Redirect URLs:
+	- `http://localhost:3333/auth/callback`
+	- your production callback (for example `https://your-app.com/auth/callback`)
+5. In Google Cloud Console (OAuth client used in Supabase Google provider), add this Authorized redirect URI exactly:
+	- `https://<your-supabase-project-ref>.supabase.co/auth/v1/callback`
+6. In SQL editor, run: `supabase/blog_schema.sql`.
+
+## 2) Configure Environment
+
+Copy `.env.example` into `.env.local` and set values:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_APP_URL=http://localhost:3333
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 3) Run Locally
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open `http://localhost:3333`.
 
-## Learn More
+## Authentication Rules
 
-To learn more about Next.js, take a look at the following resources:
+- Google OAuth users are allowed.
+- Non-Google users are allowed only if email ends with `@astrorei.io`.
+- RLS policies in `blog` schema enforce internal-only access on reads/writes.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Troubleshooting OAuth
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+If you see `Error 400: redirect_uri_mismatch` on Google sign-in:
 
-## Deploy on Vercel
+1. Verify Google Cloud OAuth client has exact URI: `https://<project-ref>.supabase.co/auth/v1/callback`.
+2. Verify Supabase Google provider is using that same client id/secret.
+3. Verify `NEXT_PUBLIC_APP_URL` matches where app runs (for local: `http://localhost:3333`).
+4. Restart dev server after env changes.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Notes About Base64 Images
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Markdown supports: `![alt](data:image/png;base64,...)`
+- Rich text supports HTML with `<img src="data:image/png;base64,..." />`
+- This keeps infrastructure cost low, but increases row size in Postgres.

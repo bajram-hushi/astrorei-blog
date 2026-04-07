@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f7fb;
+  --foreground: #171a21;
 }
 
 @theme inline {
@@ -12,15 +12,222 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+.app-bg {
+  background:
+    radial-gradient(circle at 5% 0%, #e6f4ff 0%, rgba(230, 244, 255, 0) 35%),
+    radial-gradient(circle at 95% 0%, #ffe8ee 0%, rgba(255, 232, 238, 0) 35%),
+    var(--background);
+}
+
+.app-text {
+  color: var(--foreground);
+}
+
+.prose {
+  line-height: 1.7;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin-top: 1.3em;
+  margin-bottom: 0.4em;
+  font-weight: 700;
+}
+
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose pre {
+  margin: 0.7em 0;
+}
+
+.prose ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+
+.prose ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin: 0.3rem 0;
+}
+
+.prose ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2rem;
+}
+
+.prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.35rem 0;
+}
+
+.prose ul[data-type="taskList"] li > label {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
+.prose ul[data-type="taskList"] li > label input {
+  margin: 0;
+}
+
+.prose ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.prose ul[data-type="taskList"] li > div > p {
+  margin: 0;
+}
+
+.prose code {
+  background: #f4f4f5;
+  border-radius: 0.35rem;
+  padding: 0.12rem 0.35rem;
+  font-size: 0.9em;
+}
+
+.prose pre {
+  background: #18181b;
+  color: #f4f4f5;
+  border-radius: 0.65rem;
+  padding: 0.9rem;
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+.notion-editor {
+  min-height: 44rem;
+  outline: none;
+  font-size: 1.05rem;
+  line-height: 1.9;
+  color: #1e2430;
+}
+
+.notion-editor p {
+  margin: 0.6rem 0;
+}
+
+.notion-editor h1,
+.notion-editor h2,
+.notion-editor h3 {
+  margin-top: 1.4rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.notion-editor h2 {
+  font-size: 1.5rem;
+}
+
+.notion-editor ul,
+.notion-editor ol {
+  padding-left: 1.3rem;
+}
+
+.notion-editor blockquote {
+  border-left: 3px solid #d4d4d8;
+  margin: 0.8rem 0;
+  padding-left: 0.9rem;
+  color: #52525b;
+}
+
+.notion-editor code {
+  background: #f4f4f5;
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.9em;
+}
+
+.notion-editor pre {
+  background: #18181b;
+  color: #f4f4f5;
+  border-radius: 0.65rem;
+  padding: 0.9rem;
+  overflow-x: auto;
+  margin: 0.9rem 0;
+}
+
+.notion-editor pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.notion-editor ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2rem;
+}
+
+.notion-editor ul[data-type="taskList"] li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.45rem 0;
+}
+
+.notion-editor ul[data-type="taskList"] li > label {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
+.notion-editor ul[data-type="taskList"] li > label input {
+  margin: 0;
+}
+
+.notion-editor ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.notion-editor ul[data-type="taskList"] li > div > p {
+  margin: 0;
+}
+
+.notion-editor a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.notion-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.notion-editor p.is-editor-empty:first-child::before {
+  color: #a1a1aa;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }
