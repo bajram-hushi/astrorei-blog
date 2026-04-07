@@ -24,6 +24,13 @@ export async function Header() {
     .eq("id", user.id)
     .maybeSingle();
 
+  const { count: unreadNotifications } = await supabase
+    .schema("blog")
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", user.id)
+    .is("read_at", null);
+
   const resolved = resolveProfile(user, profile);
 
   return (
@@ -63,10 +70,32 @@ export async function Header() {
             New Post
           </Link>
           <Link
-            href="/profile"
-            className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100"
+            href="/notifications"
+            aria-label={
+              unreadNotifications && unreadNotifications > 0
+                ? `Notifications (${unreadNotifications} unread)`
+                : "Notifications"
+            }
+            className="relative rounded-md border border-zinc-300 p-2 hover:bg-zinc-100"
           >
-            Profile
+            <svg
+              className="h-5 w-5 text-zinc-700"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M15 17h5l-1.4-1.4a2 2 0 0 1-.6-1.4V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" />
+              <path d="M9 17a3 3 0 0 0 6 0" />
+            </svg>
+            {!!unreadNotifications && unreadNotifications > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 rounded-full bg-zinc-900 px-1.5 py-0.5 text-[10px] leading-none text-white">
+                {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            )}
           </Link>
           <form action={signOut}>
             <button

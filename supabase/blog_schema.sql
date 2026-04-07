@@ -51,6 +51,21 @@ create table if not exists blog.comment_votes (
   unique (comment_id, user_id)
 );
 
+create table if not exists blog.notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references auth.users (id) on delete cascade,
+  actor_id uuid not null references auth.users (id) on delete cascade,
+  type text not null check (type in ('comment_on_post', 'reply_to_comment')),
+  post_id uuid not null references blog.posts (id) on delete cascade,
+  comment_id uuid not null references blog.comments (id) on delete cascade,
+  parent_comment_id uuid references blog.comments (id) on delete set null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz,
+  constraint notification_no_self check (recipient_id <> actor_id)
+);
+
+grant select, insert, update, delete on blog.notifications to authenticated;
+
 create index if not exists idx_comments_post_parent_created_at
 on blog.comments (post_id, parent_id, created_at);
 
@@ -59,6 +74,15 @@ on blog.comment_votes (comment_id);
 
 create index if not exists idx_comment_votes_user_id
 on blog.comment_votes (user_id);
+
+create index if not exists idx_notifications_recipient_created_at
+on blog.notifications (recipient_id, created_at desc);
+
+create index if not exists idx_notifications_post_id
+on blog.notifications (post_id);
+
+create index if not exists idx_notifications_comment_id
+on blog.notifications (comment_id);
 
 create table if not exists blog.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -132,6 +156,7 @@ alter table blog.posts enable row level security;
 alter table blog.comments enable row level security;
 alter table blog.profiles enable row level security;
 alter table blog.comment_votes enable row level security;
+alter table blog.notifications enable row level security;
 
 drop policy if exists posts_select_internal on blog.posts;
 create policy posts_select_internal
@@ -232,6 +257,35 @@ create policy profiles_delete_own
 on blog.profiles
 for delete
 using (blog.is_allowed_user() and auth.uid() = id);
+
+drop policy if exists notifications_select_own on blog.notifications;
+create policy notifications_select_own
+on blog.notifications
+for select
+using (blog.is_allowed_user() and auth.uid() = recipient_id);
+
+drop policy if exists notifications_insert_actor on blog.notifications;
+create policy notifications_insert_actor
+on blog.notifications
+for insert
+with check (
+  blog.is_allowed_user()
+  and auth.uid() = actor_id
+  and recipient_id <> actor_id
+);
+
+drop policy if exists notifications_update_recipient on blog.notifications;
+create policy notifications_update_recipient
+on blog.notifications
+for update
+using (blog.is_allowed_user() and auth.uid() = recipient_id)
+with check (blog.is_allowed_user() and auth.uid() = recipient_id);
+
+drop policy if exists notifications_delete_recipient on blog.notifications;
+create policy notifications_delete_recipient
+on blog.notifications
+for delete
+using (blog.is_allowed_user() and auth.uid() = recipient_id);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (

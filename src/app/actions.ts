@@ -56,7 +56,7 @@ export async function createPost(formData: FormData) {
 }
 
 export async function addComment(formData: FormData) {
-  const { supabase } = await requireAllowedUser();
+  const { supabase, user } = await requireAllowedUser();
 
   const postId = String(formData.get("post_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
@@ -67,28 +67,89 @@ export async function addComment(formData: FormData) {
     redirect(postId ? `/post/${postId}?error=missing_comment_fields` : "/?error=missing_comment_fields");
   }
 
+  let parentCommentAuthorId: string | null = null;
   if (parentId) {
     const { data: parentComment } = await supabase
       .schema("blog")
       .from("comments")
-      .select("id, post_id")
+      .select("id, post_id, author_id")
       .eq("id", parentId)
       .maybeSingle();
 
     if (!parentComment || parentComment.post_id !== postId) {
       redirect(`/post/${postId}?error=invalid_parent_comment`);
     }
+
+    parentCommentAuthorId = parentComment.author_id;
   }
 
-  const { error } = await supabase.schema("blog").from("comments").insert({
+  const { data: postOwner } = await supabase
+    .schema("blog")
+    .from("posts")
+    .select("author_id")
+    .eq("id", postId)
+    .maybeSingle();
+
+  const { data: insertedComment, error } = await supabase
+    .schema("blog")
+    .from("comments")
+    .insert({
     post_id: postId,
     parent_id: parentId,
     body,
-  });
+    })
+    .select("id")
+    .single();
 
   if (error) {
     const detail = encodeURIComponent(error.message || error.code || "unknown_error");
     redirect(`/post/${postId}?error=comment_failed&detail=${detail}`);
+  }
+
+  if (insertedComment) {
+    const notifications: Array<{
+      recipient_id: string;
+      actor_id: string;
+      type: "comment_on_post" | "reply_to_comment";
+      post_id: string;
+      comment_id: string;
+      parent_comment_id: string | null;
+    }> = [];
+
+    const postAuthorId = postOwner?.author_id ?? null;
+    if (postAuthorId && postAuthorId !== user.id) {
+      notifications.push({
+        recipient_id: postAuthorId,
+        actor_id: user.id,
+        type: "comment_on_post",
+        post_id: postId,
+        comment_id: insertedComment.id,
+        parent_comment_id: parentId,
+      });
+    }
+
+    if (
+      parentCommentAuthorId &&
+      parentCommentAuthorId !== user.id &&
+      parentCommentAuthorId !== postAuthorId
+    ) {
+      notifications.push({
+        recipient_id: parentCommentAuthorId,
+        actor_id: user.id,
+        type: "reply_to_comment",
+        post_id: postId,
+        comment_id: insertedComment.id,
+        parent_comment_id: parentId,
+      });
+    }
+
+    if (notifications.length) {
+      await supabase.schema("blog").from("notifications").insert(notifications);
+      for (const notification of notifications) {
+        revalidatePath(notification.recipient_id === user.id ? "/profile" : `/user/${notification.recipient_id}`);
+      }
+      revalidatePath("/notifications");
+    }
   }
 
   revalidatePath(`/post/${postId}`);
@@ -183,4 +244,18 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/profile");
   redirect("/profile?success=1");
+}
+
+export async function markAllNotificationsRead() {
+  const { supabase, user } = await requireAllowedUser();
+
+  await supabase
+    .schema("blog")
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("recipient_id", user.id)
+    .is("read_at", null);
+
+  revalidatePath("/notifications");
+  redirect("/notifications");
 }
