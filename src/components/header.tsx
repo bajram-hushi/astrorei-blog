@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions";
@@ -28,8 +29,15 @@ export async function Header() {
   return (
     <header className="border-b border-zinc-800/20 bg-white/70 backdrop-blur">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
-          Astrorei Internal Blog
+        <Link href="/" className="inline-flex items-center" aria-label="ReiLabs home">
+          <Image
+            src="/reilabs-header-logo.svg"
+            alt="ReiLabs"
+            width={190}
+            height={38}
+            priority
+            className="h-9 w-auto sm:h-10"
+          />
         </Link>
 
         <div className="flex items-center gap-3 text-sm">

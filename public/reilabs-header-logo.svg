@@ -1,0 +1,24 @@
+<svg width="320" height="64" viewBox="0 0 320 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ReiLabs</title>
+  <desc id="desc">ReiLabs compact header logo</desc>
+
+  <defs>
+    <linearGradient id="orbitOrange" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFB347"/>
+      <stop offset="1" stop-color="#FF6A00"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(6 6)">
+    <circle cx="22" cy="26" r="12" fill="#153457"/>
+    <circle cx="22" cy="26" r="6.5" fill="#F5F8FC"/>
+    <path d="M1 33C6 18 18 8 33 8C38 8 44 9 49 12" stroke="url(#orbitOrange)" stroke-width="4" stroke-linecap="round"/>
+    <path d="M49 39C44 44 37 47 30 47C20 47 11 41 6 31" stroke="#0B6CB3" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="49" cy="12" r="2.6" fill="#FF9D00"/>
+  </g>
+
+  <g font-family="'Segoe UI', 'Trebuchet MS', sans-serif" font-weight="800" font-size="42" letter-spacing="0.2">
+    <text x="74" y="46" fill="#FF7A00">Rei</text>
+    <text x="142" y="46" fill="#16375C">Labs</text>
+  </g>
+</svg>

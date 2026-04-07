@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { loginWithAstrorei, loginWithGoogle, signUpAstrorei } from "./actions";
 
 type Props = {
@@ -13,7 +14,15 @@ export default async function LoginPage({ searchParams }: Props) {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
       <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold">Astrorei Internal Blog</h1>
+        <Image
+          src="/rei-labs-logo.png"
+          alt="ReiLabs"
+          width={360}
+          height={112}
+          priority
+          className="mb-3 h-auto w-full"
+        />
+        <h1 className="text-2xl font-bold">ReiLabs</h1>
         <p className="mt-1 text-sm text-zinc-600">
           Login is allowed only with Google or @astrorei.io credentials.
         </p>

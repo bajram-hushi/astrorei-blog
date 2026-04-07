@@ -1,4 +1,4 @@
-# Astrorei Internal Blog
+# ReiLabs
 
 Internal blog application with:
 
