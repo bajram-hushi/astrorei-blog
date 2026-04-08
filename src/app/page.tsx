@@ -7,6 +7,7 @@ import { isAllowedUser } from "@/lib/auth";
 import { BlogProfile } from "@/lib/profile";
 import { formatEurCompact } from "@/lib/currency";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 type Props = {
   searchParams: Promise<{ eval_status?: string; eval_detail?: string }>;
@@ -104,13 +105,17 @@ export default async function Home({ searchParams }: Props) {
               >
                 {post.title}
               </Link>
-              {post.investment_eur !== null && post.investment_eur !== undefined && (
-                <p className="mt-1 text-xs font-medium text-zinc-700">
-                  Angel investor: EUR {formatEurCompact(post.investment_eur)}
-                  {post.investment_confidence ? ` (confidence ${post.investment_confidence}%)` : ""}
-                </p>
-              )}
-              {(post.investment_eur === null || post.investment_eur === undefined) && (
+              {post.investment_eur !== null &&
+                post.investment_eur !== undefined && (
+                  <p className="mt-1 text-xs font-medium text-zinc-700">
+                    Angel investor: EUR {formatEurCompact(post.investment_eur)}
+                    {post.investment_confidence
+                      ? ` (confidence ${post.investment_confidence}%)`
+                      : ""}
+                  </p>
+                )}
+              {(post.investment_eur === null ||
+                post.investment_eur === undefined) && (
                 <form action={evaluatePostInvestment} className="mt-2">
                   <input type="hidden" name="post_id" value={post.id} />
                   <input type="hidden" name="redirect_to" value="/" />
@@ -124,7 +129,11 @@ export default async function Home({ searchParams }: Props) {
               )}
               <div className="mt-2 flex items-center gap-2 text-sm text-zinc-600">
                 <Link
-                  href={post.author_id === user?.id ? "/profile" : `/user/${post.author_id}`}
+                  href={
+                    post.author_id === user?.id
+                      ? "/profile"
+                      : `/user/${post.author_id}`
+                  }
                   className="flex items-center gap-1.5 hover:underline"
                 >
                   {profileMap.get(post.author_id)?.avatar_url ? (
@@ -146,10 +155,13 @@ export default async function Home({ searchParams }: Props) {
                     </div>
                   )}
                   <span>
-                    {profileMap.get(post.author_id)?.username ?? post.author_email}
+                    {profileMap.get(post.author_id)?.username ??
+                      post.author_email}
                   </span>
                 </Link>
-                <span className="text-zinc-400">{new Date(post.created_at).toLocaleString()}</span>
+                <span className="text-zinc-400">
+                  {new Date(post.created_at).toLocaleString()}
+                </span>
               </div>
             </article>
           ))}
@@ -162,6 +174,7 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </main>
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
