@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser } from "@/lib/auth";
 import { evaluateAngelInvestment } from "@/lib/angel-investor";
 import { getUserInvestmentSummary } from "@/lib/investments";
+import { sendNewPostEmail } from "@/lib/email";
 
 async function requireAllowedUser() {
   const supabase = await createClient();
@@ -89,6 +90,14 @@ function appendInvestStatus(path: string, status: string, detail?: string) {
   return `${pathname}?${params.toString()}`;
 }
 
+function buildEmailContentHtml(content: string, contentFormat: "markdown" | "richtext"): string {
+  if (contentFormat === "richtext") {
+    return content;
+  }
+
+  return `<p>${content.replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br />")}</p>`;
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
@@ -96,7 +105,7 @@ export async function signOut() {
 }
 
 export async function createPost(formData: FormData) {
-  const { supabase } = await requireAllowedUser();
+  const { supabase, user } = await requireAllowedUser();
 
   const title = String(formData.get("title") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
@@ -127,6 +136,19 @@ export async function createPost(formData: FormData) {
   }
 
   if (insertedPost?.id) {
+    const preview = buildEmailContentHtml(content, contentFormat as "markdown" | "richtext");
+
+    try {
+      await sendNewPostEmail({
+        postId: insertedPost.id,
+        title,
+        authorEmail: user.email ?? "unknown",
+        preview,
+      });
+    } catch (emailError) {
+      console.error("Failed to send new post email", emailError);
+    }
+
     await runAngelEvaluationForPost({
       supabase,
       postId: insertedPost.id,
