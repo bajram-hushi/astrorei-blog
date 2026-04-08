@@ -3,14 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "npm run db:migrate:auto",
     "dev": "next dev -p 3333",
-    "prestart": "npm run db:migrate:auto",
     "build": "next build",
     "start": "next start -p 3333",
     "lint": "eslint",
-    "db:migrate": "psql \"$SUPABASE_DB_URL\" -v ON_ERROR_STOP=1 -f supabase/blog_schema.sql",
-    "db:migrate:auto": "sh -c 'if [ -n \"$SUPABASE_DB_URL\" ]; then psql \"$SUPABASE_DB_URL\" -v ON_ERROR_STOP=1 -f supabase/blog_schema.sql; else echo \"SUPABASE_DB_URL not set, skipping auto migration\"; fi'"
+    "db:migrate:local": "npx supabase db push"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",

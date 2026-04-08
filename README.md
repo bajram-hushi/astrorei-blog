@@ -52,9 +52,9 @@ Note:
 
 Open `http://localhost:3333`.
 
-## Production Release Migrations (Supabase)
+## Production Migrations (Supabase Environments)
 
-Supabase schema migration is now automated on GitHub release publish.
+This repo now follows Supabase's environment management workflow using Supabase CLI migrations.
 
 Workflow file:
 
@@ -62,29 +62,28 @@ Workflow file:
 
 How it works:
 
-1. Publish a GitHub Release.
-2. GitHub Actions runs `psql` against production DB.
-3. It applies `supabase/blog_schema.sql` with `ON_ERROR_STOP=1`.
+1. Keep SQL migrations in `supabase/migrations/*.sql`.
+2. On every push to `main`, GitHub Actions links to production project.
+3. It runs `supabase db push` to apply new migrations.
 
-Required GitHub secret:
+Required GitHub secrets:
 
-- `SUPABASE_DB_URL` (Supabase Postgres connection string for production, with SSL enabled)
+- `SUPABASE_ACCESS_TOKEN`
+- `PRODUCTION_PROJECT_ID`
+- `PRODUCTION_DB_PASSWORD`
 
-Recommended format:
-
-```bash
-postgresql://postgres:<PASSWORD>@db.<PROJECT-REF>.supabase.co:5432/postgres?sslmode=require
-```
-
-Manual fallback from terminal:
+Useful local commands:
 
 ```bash
-SUPABASE_DB_URL='postgresql://...' npm run db:migrate
+supabase migration new <name>
+supabase db reset
+supabase db push
 ```
 
-Tip:
+Notes:
 
-- Keep `supabase/blog_schema.sql` idempotent (`if exists`/`if not exists`) to safely re-run on each release.
+- `supabase/blog_schema.sql` is retained as a full schema reference.
+- CI/CD deployments use migration files under `supabase/migrations`.
 
 ## Authentication Rules
 
