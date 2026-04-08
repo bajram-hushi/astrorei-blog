@@ -6,7 +6,8 @@
     "dev": "next dev -p 3333",
     "build": "next build",
     "start": "next start -p 3333",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "psql \"$SUPABASE_DB_URL\" -v ON_ERROR_STOP=1 -f supabase/blog_schema.sql"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",

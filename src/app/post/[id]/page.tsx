@@ -92,6 +92,12 @@ export default async function PostPage({ params, searchParams }: Props) {
     .eq("id", post.author_id)
     .single();
 
+  const { data: projectLinks } = await supabase
+    .schema("blog")
+    .from("project_posts")
+    .select("project_id, projects(id, title, status)")
+    .eq("post_id", post.id);
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -151,6 +157,30 @@ export default async function PostPage({ params, searchParams }: Props) {
               format={post.content_format as "markdown" | "richtext"}
             />
           </div>
+          {!!projectLinks?.length && (
+            <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">Linked Projects</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {projectLinks.map((link) => {
+                  const project = Array.isArray(link.projects) ? link.projects[0] : link.projects;
+                  if (!project) {
+                    return null;
+                  }
+
+                  return (
+                    <Link
+                      key={link.project_id}
+                      href={`/projects/${project.id}`}
+                      className="inline-flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs text-zinc-700 hover:bg-zinc-100"
+                    >
+                      <span>{project.title}</span>
+                      <span className="text-zinc-500">{project.status}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {post.investment_eur !== null && post.investment_eur !== undefined && (
             <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Angel Investor Decision</p>

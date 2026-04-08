@@ -70,6 +70,12 @@ export async function Header() {
             New Post
           </Link>
           <Link
+            href="/projects"
+            className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100"
+          >
+            Projects
+          </Link>
+          <Link
             href="/notifications"
             aria-label={
               unreadNotifications && unreadNotifications > 0

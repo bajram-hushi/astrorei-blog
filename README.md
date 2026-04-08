@@ -22,10 +22,10 @@ Internal blog application with:
 2. Enable Google provider in Auth -> Providers.
 3. In Supabase Auth -> URL Configuration, set Site URL to your app URL (for local: `http://localhost:3333`).
 4. In Supabase Auth -> URL Configuration, add Redirect URLs:
-	- `http://localhost:3333/auth/callback`
-	- your production callback (for example `https://your-app.com/auth/callback`)
+   - `http://localhost:3333/auth/callback`
+   - your production callback (for example `https://your-app.com/auth/callback`)
 5. In Google Cloud Console (OAuth client used in Supabase Google provider), add this Authorized redirect URI exactly:
-	- `https://<your-supabase-project-ref>.supabase.co/auth/v1/callback`
+   - `https://<your-supabase-project-ref>.supabase.co/auth/v1/callback`
 6. In SQL editor, run: `supabase/blog_schema.sql`.
 
 ## 2) Configure Environment
@@ -46,6 +46,40 @@ npm run dev
 ```
 
 Open `http://localhost:3333`.
+
+## Production Release Migrations (Supabase)
+
+Supabase schema migration is now automated on GitHub release publish.
+
+Workflow file:
+
+- `.github/workflows/release-supabase-migrate.yml`
+
+How it works:
+
+1. Publish a GitHub Release.
+2. GitHub Actions runs `psql` against production DB.
+3. It applies `supabase/blog_schema.sql` with `ON_ERROR_STOP=1`.
+
+Required GitHub secret:
+
+- `SUPABASE_DB_URL` (Supabase Postgres connection string for production, with SSL enabled)
+
+Recommended format:
+
+```bash
+postgresql://postgres:<PASSWORD>@db.<PROJECT-REF>.supabase.co:5432/postgres?sslmode=require
+```
+
+Manual fallback from terminal:
+
+```bash
+SUPABASE_DB_URL='postgresql://...' npm run db:migrate
+```
+
+Tip:
+
+- Keep `supabase/blog_schema.sql` idempotent (`if exists`/`if not exists`) to safely re-run on each release.
 
 ## Authentication Rules
 

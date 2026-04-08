@@ -98,6 +98,31 @@ function buildEmailContentHtml(content: string, contentFormat: "markdown" | "ric
   return `<p>${content.replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br />")}</p>`;
 }
 
+const PROJECT_STATUSES = [
+  "idea",
+  "concept",
+  "validation",
+  "building",
+  "launched",
+  "archived",
+] as const;
+
+type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+const MAX_PROJECT_SUMMARY_LENGTH = 50000;
+
+function isProjectStatus(value: string): value is ProjectStatus {
+  return PROJECT_STATUSES.includes(value as ProjectStatus);
+}
+
+function parseProjectIds(formData: FormData): string[] {
+  const values = formData
+    .getAll("project_ids")
+    .map((entry) => String(entry).trim())
+    .filter(Boolean);
+
+  return Array.from(new Set(values));
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
@@ -110,6 +135,7 @@ export async function createPost(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
   const contentFormat = String(formData.get("content_format") ?? "markdown");
+  const projectIds = parseProjectIds(formData);
 
   if (!title || !content) {
     redirect("/new?error=missing_fields");
@@ -136,6 +162,28 @@ export async function createPost(formData: FormData) {
   }
 
   if (insertedPost?.id) {
+    if (projectIds.length) {
+      const linkRows = projectIds.map((projectId) => ({
+        project_id: projectId,
+        post_id: insertedPost.id,
+      }));
+
+      const { error: linkError } = await supabase
+        .schema("blog")
+        .from("project_posts")
+        .insert(linkRows);
+
+      if (linkError) {
+        const detail = encodeURIComponent(linkError.message || linkError.code || "link_projects_failed");
+        redirect(`/new?error=project_link_failed&detail=${detail}`);
+      }
+
+      revalidatePath("/projects");
+      for (const projectId of projectIds) {
+        revalidatePath(`/projects/${projectId}`);
+      }
+    }
+
     const preview = buildEmailContentHtml(content, contentFormat as "markdown" | "richtext");
 
     try {
@@ -160,6 +208,240 @@ export async function createPost(formData: FormData) {
 
   revalidatePath("/");
   redirect("/");
+}
+
+export async function createProject(formData: FormData) {
+  const { supabase } = await requireAllowedUser();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const summary = String(formData.get("summary") ?? "").trim();
+  const summaryFormat = String(formData.get("summary_format") ?? "richtext").trim();
+  const statusRaw = String(formData.get("status") ?? "idea").trim();
+  const imageUrlRaw = String(formData.get("image_url") ?? "").trim();
+  const websiteUrlRaw = String(formData.get("website_url") ?? "").trim();
+  const githubRepoUrlRaw = String(formData.get("github_repo_url") ?? "").trim();
+
+  if (!title || !summary) {
+    redirect("/projects/new?error=missing_fields");
+  }
+
+  if (summary.length > MAX_PROJECT_SUMMARY_LENGTH) {
+    redirect(`/projects/new?error=invalid_summary_length&detail=${MAX_PROJECT_SUMMARY_LENGTH}`);
+  }
+
+  if (!isProjectStatus(statusRaw)) {
+    redirect("/projects/new?error=invalid_status");
+  }
+
+  if (summaryFormat !== "markdown" && summaryFormat !== "richtext") {
+    redirect("/projects/new?error=invalid_summary_format");
+  }
+
+  const imageUrl = imageUrlRaw || null;
+  const websiteUrl = websiteUrlRaw || null;
+  const githubRepoUrl = githubRepoUrlRaw || null;
+
+  const { data: project, error } = await supabase
+    .schema("blog")
+    .from("projects")
+    .insert({
+      title,
+      summary,
+      summary_format: summaryFormat,
+      status: statusRaw,
+      image_url: imageUrl,
+      website_url: websiteUrl,
+      github_repo_url: githubRepoUrl,
+    })
+    .select("id, status")
+    .single();
+
+  if (error || !project) {
+    const detail = encodeURIComponent(error?.message || error?.code || "create_project_failed");
+    redirect(`/projects/new?error=create_project_failed&detail=${detail}`);
+  }
+
+  await supabase.schema("blog").from("project_status_history").insert({
+    project_id: project.id,
+    from_status: null,
+    to_status: project.status,
+    rationale: "Project created",
+  });
+
+  revalidatePath("/projects");
+  revalidatePath("/new");
+  redirect(`/projects/${project.id}`);
+}
+
+export async function updateProjectStatus(formData: FormData) {
+  const { supabase, user } = await requireAllowedUser();
+
+  const projectId = String(formData.get("project_id") ?? "").trim();
+  const toStatus = String(formData.get("to_status") ?? "").trim();
+  const rationaleRaw = String(formData.get("rationale") ?? "").trim();
+
+  if (!projectId || !isProjectStatus(toStatus)) {
+    redirect(projectId ? `/projects/${projectId}?error=invalid_status_payload` : "/projects?error=invalid_status_payload");
+  }
+
+  const rationale = rationaleRaw || "Status updated";
+
+  const { data: existingProject } = await supabase
+    .schema("blog")
+    .from("projects")
+    .select("id, status, owner_user_id")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (!existingProject) {
+    redirect("/projects?error=project_not_found");
+  }
+
+  if (existingProject.owner_user_id !== user.id) {
+    redirect(`/projects/${projectId}?error=forbidden`);
+  }
+
+  if (existingProject.status === toStatus) {
+    redirect(`/projects/${projectId}?status_updated=0`);
+  }
+
+  const { error: updateError } = await supabase
+    .schema("blog")
+    .from("projects")
+    .update({ status: toStatus })
+    .eq("id", projectId);
+
+  if (updateError) {
+    const detail = encodeURIComponent(updateError.message || updateError.code || "project_status_update_failed");
+    redirect(`/projects/${projectId}?error=project_status_update_failed&detail=${detail}`);
+  }
+
+  const { error: historyError } = await supabase
+    .schema("blog")
+    .from("project_status_history")
+    .insert({
+      project_id: projectId,
+      from_status: existingProject.status,
+      to_status: toStatus,
+      rationale,
+    });
+
+  if (historyError) {
+    const detail = encodeURIComponent(historyError.message || historyError.code || "project_history_failed");
+    redirect(`/projects/${projectId}?error=project_history_failed&detail=${detail}`);
+  }
+
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${projectId}`);
+  redirect(`/projects/${projectId}?status_updated=1`);
+}
+
+export async function updateProjectDetails(formData: FormData) {
+  const { supabase, user } = await requireAllowedUser();
+
+  const projectId = String(formData.get("project_id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const summary = String(formData.get("summary") ?? "").trim();
+  const summaryFormat = String(formData.get("summary_format") ?? "richtext").trim();
+  const imageUrlRaw = String(formData.get("image_url") ?? "").trim();
+  const websiteUrlRaw = String(formData.get("website_url") ?? "").trim();
+  const githubRepoUrlRaw = String(formData.get("github_repo_url") ?? "").trim();
+  const noteRaw = String(formData.get("edit_note") ?? "").trim();
+
+  if (!projectId || !title || !summary) {
+    redirect(projectId ? `/projects/${projectId}?error=missing_project_fields` : "/projects?error=missing_project_fields");
+  }
+
+  if (summary.length > MAX_PROJECT_SUMMARY_LENGTH) {
+    redirect(`/projects/${projectId}/edit?error=invalid_summary_length&detail=${MAX_PROJECT_SUMMARY_LENGTH}`);
+  }
+
+  if (summaryFormat !== "markdown" && summaryFormat !== "richtext") {
+    redirect(`/projects/${projectId}/edit?error=invalid_summary_format`);
+  }
+
+  const imageUrl = imageUrlRaw || null;
+  const websiteUrl = websiteUrlRaw || null;
+  const githubRepoUrl = githubRepoUrlRaw || null;
+  const note = noteRaw || null;
+
+  const { data: existingProject } = await supabase
+    .schema("blog")
+    .from("projects")
+    .select("id, owner_user_id, title, summary, summary_format, image_url, website_url, github_repo_url")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (!existingProject) {
+    redirect("/projects?error=project_not_found");
+  }
+
+  if (existingProject.owner_user_id !== user.id) {
+    redirect(`/projects/${projectId}?error=forbidden`);
+  }
+
+  const changedFields: string[] = [];
+  const previousValues: Record<string, string | null> = {};
+  const newValues: Record<string, string | null> = {};
+
+  const candidateChanges: Array<{ key: string; before: string | null; after: string | null }> = [
+    { key: "title", before: existingProject.title, after: title },
+    { key: "summary", before: existingProject.summary, after: summary },
+    { key: "summary_format", before: existingProject.summary_format, after: summaryFormat },
+    { key: "image_url", before: existingProject.image_url, after: imageUrl },
+    { key: "website_url", before: existingProject.website_url, after: websiteUrl },
+    { key: "github_repo_url", before: existingProject.github_repo_url, after: githubRepoUrl },
+  ];
+
+  for (const change of candidateChanges) {
+    if ((change.before ?? null) !== (change.after ?? null)) {
+      changedFields.push(change.key);
+      previousValues[change.key] = change.before ?? null;
+      newValues[change.key] = change.after ?? null;
+    }
+  }
+
+  if (!changedFields.length) {
+    redirect(`/projects/${projectId}?project_updated=0`);
+  }
+
+  const { error: updateError } = await supabase
+    .schema("blog")
+    .from("projects")
+    .update({
+      title,
+      summary,
+      summary_format: summaryFormat,
+      image_url: imageUrl,
+      website_url: websiteUrl,
+      github_repo_url: githubRepoUrl,
+    })
+    .eq("id", projectId);
+
+  if (updateError) {
+    const detail = encodeURIComponent(updateError.message || updateError.code || "project_update_failed");
+    redirect(`/projects/${projectId}/edit?error=project_update_failed&detail=${detail}`);
+  }
+
+  const { error: historyError } = await supabase
+    .schema("blog")
+    .from("project_edit_history")
+    .insert({
+      project_id: projectId,
+      changed_fields: changedFields,
+      previous_values: previousValues,
+      new_values: newValues,
+      note,
+    });
+
+  if (historyError) {
+    const detail = encodeURIComponent(historyError.message || historyError.code || "project_edit_history_failed");
+    redirect(`/projects/${projectId}/edit?error=project_edit_history_failed&detail=${detail}`);
+  }
+
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${projectId}`);
+  redirect(`/projects/${projectId}?project_updated=1`);
 }
 
 export async function evaluatePostInvestment(formData: FormData) {

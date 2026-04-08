@@ -24,6 +24,10 @@ function toErrorMessage(code?: string, detail?: string) {
       return detail
         ? `Could not create the post: ${detail}`
         : "Could not create the post. Check Supabase schema and RLS policies, then try again.";
+    case "project_link_failed":
+      return detail
+        ? `Post was created but linking projects failed: ${detail}`
+        : "Post was created but linking selected projects failed.";
     default:
       return code ? `Error: ${code}` : "";
   }
@@ -39,6 +43,13 @@ export default async function NewPostPage({ searchParams }: Props) {
   if (!isAllowedUser(user)) {
     redirect("/login");
   }
+
+  const { data: projects } = await supabase
+    .schema("blog")
+    .from("projects")
+    .select("id, title, status")
+    .order("created_at", { ascending: false })
+    .limit(20);
 
   return (
     <div className="min-h-screen">
@@ -78,6 +89,24 @@ export default async function NewPostPage({ searchParams }: Props) {
           </label>
 
           <PostEditorFields />
+
+          <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+            <p className="text-sm font-semibold text-zinc-700">Link to projects (optional)</p>
+            {!!projects?.length && (
+              <div className="space-y-2">
+                {projects.map((project) => (
+                  <label key={project.id} className="flex items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm">
+                    <span>{project.title}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="rounded-full border border-zinc-300 px-2 py-0.5 text-xs text-zinc-600">{project.status}</span>
+                      <input type="checkbox" name="project_ids" value={project.id} className="h-4 w-4" />
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            {!projects?.length && <p className="text-xs text-zinc-600">No projects yet. Create one from the Projects page.</p>}
+          </div>
 
           <button
             type="submit"

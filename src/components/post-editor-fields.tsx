@@ -150,8 +150,18 @@ function ToolButton({
   );
 }
 
-export function PostEditorFields() {
-  const [html, setHtml] = useState("");
+export function PostEditorFields({
+  contentFieldName = "content",
+  contentFormatFieldName = "content_format",
+  initialContent = "",
+  placeholder = "Write your post like a Notion page...",
+}: {
+  contentFieldName?: string;
+  contentFormatFieldName?: string;
+  initialContent?: string;
+  placeholder?: string;
+}) {
+  const [html, setHtml] = useState(initialContent);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -256,10 +266,10 @@ export function PostEditorFields() {
         autolink: true,
       }),
       Placeholder.configure({
-        placeholder: "Write your post like a Notion page...",
+        placeholder,
       }),
     ],
-    content: "",
+    content: initialContent,
     editorProps: {
       attributes: {
         class: "notion-editor",
@@ -637,8 +647,8 @@ export function PostEditorFields() {
         )}
       </div>
 
-      <input type="hidden" name="content_format" value="richtext" />
-      <input type="hidden" name="content" value={html} required />
+      <input type="hidden" name={contentFormatFieldName} value="richtext" />
+      <input type="hidden" name={contentFieldName} value={html} required />
     </section>
   );
 }

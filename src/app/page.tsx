@@ -85,12 +85,20 @@ export default async function Home({ searchParams }: Props) {
         )}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Recent Posts</h1>
-          <Link
-            href="/new"
-            className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
-          >
-            Create Post
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/projects"
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100"
+            >
+              Projects
+            </Link>
+            <Link
+              href="/new"
+              className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
+            >
+              Create Post
+            </Link>
+          </div>
         </div>
 
         <div className="space-y-4">

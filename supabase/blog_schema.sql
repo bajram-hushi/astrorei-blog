@@ -108,6 +108,84 @@ create table if not exists blog.post_investments (
   unique (post_id, investor_id)
 );
 
+create table if not exists blog.projects (
+  id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  title text not null check (char_length(title) between 1 and 140),
+  summary text not null check (char_length(summary) between 1 and 50000),
+  summary_format text not null default 'richtext' check (summary_format in ('markdown', 'richtext')),
+  status text not null default 'idea' check (status in ('idea', 'concept', 'validation', 'building', 'launched', 'archived')),
+  image_url text,
+  website_url text,
+  github_repo_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table blog.projects
+add column if not exists image_url text;
+
+alter table blog.projects
+add column if not exists summary_format text;
+
+update blog.projects
+set summary_format = coalesce(summary_format, 'richtext');
+
+alter table blog.projects
+alter column summary_format set default 'richtext';
+
+alter table blog.projects
+alter column summary_format set not null;
+
+alter table blog.projects
+drop constraint if exists projects_summary_format_check;
+
+alter table blog.projects
+add constraint projects_summary_format_check
+check (summary_format in ('markdown', 'richtext'));
+
+alter table blog.projects
+drop constraint if exists projects_summary_check;
+
+alter table blog.projects
+add constraint projects_summary_check
+check (char_length(summary) between 1 and 50000);
+
+create table if not exists blog.project_posts (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references blog.projects (id) on delete cascade,
+  post_id uuid not null references blog.posts (id) on delete cascade,
+  linked_by uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (project_id, post_id)
+);
+
+create table if not exists blog.project_status_history (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references blog.projects (id) on delete cascade,
+  from_status text,
+  to_status text not null check (to_status in ('idea', 'concept', 'validation', 'building', 'launched', 'archived')),
+  rationale text,
+  changed_by uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists blog.project_edit_history (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references blog.projects (id) on delete cascade,
+  edited_by uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  changed_fields text[] not null,
+  previous_values jsonb not null default '{}'::jsonb,
+  new_values jsonb not null default '{}'::jsonb,
+  note text,
+  created_at timestamptz not null default now()
+);
+
+grant select, insert, update, delete on blog.projects to authenticated;
+grant select, insert, update, delete on blog.project_posts to authenticated;
+grant select, insert, update, delete on blog.project_status_history to authenticated;
+grant select, insert on blog.project_edit_history to authenticated;
+
 grant select, insert, update, delete on blog.notifications to authenticated;
 
 create index if not exists idx_comments_post_parent_created_at
@@ -133,6 +211,24 @@ on blog.post_investments (post_id);
 
 create index if not exists idx_post_investments_investor_id
 on blog.post_investments (investor_id);
+
+create index if not exists idx_projects_owner_created_at
+on blog.projects (owner_user_id, created_at desc);
+
+create index if not exists idx_projects_status
+on blog.projects (status);
+
+create index if not exists idx_project_posts_project_id
+on blog.project_posts (project_id);
+
+create index if not exists idx_project_posts_post_id
+on blog.project_posts (post_id);
+
+create index if not exists idx_project_status_history_project_created_at
+on blog.project_status_history (project_id, created_at desc);
+
+create index if not exists idx_project_edit_history_project_created_at
+on blog.project_edit_history (project_id, created_at desc);
 
 create table if not exists blog.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -202,6 +298,12 @@ before update on blog.post_investments
 for each row
 execute procedure blog.set_updated_at();
 
+drop trigger if exists trg_projects_updated_at on blog.projects;
+create trigger trg_projects_updated_at
+before update on blog.projects
+for each row
+execute procedure blog.set_updated_at();
+
 drop trigger if exists trg_comments_validate_parent on blog.comments;
 create trigger trg_comments_validate_parent
 before insert or update of parent_id, post_id on blog.comments
@@ -214,6 +316,10 @@ alter table blog.profiles enable row level security;
 alter table blog.comment_votes enable row level security;
 alter table blog.notifications enable row level security;
 alter table blog.post_investments enable row level security;
+alter table blog.projects enable row level security;
+alter table blog.project_posts enable row level security;
+alter table blog.project_status_history enable row level security;
+alter table blog.project_edit_history enable row level security;
 
 drop policy if exists posts_select_internal on blog.posts;
 create policy posts_select_internal
@@ -362,6 +468,104 @@ on blog.post_investments
 for update
 using (blog.is_allowed_user() and auth.uid() = investor_id)
 with check (blog.is_allowed_user() and auth.uid() = investor_id);
+
+drop policy if exists projects_select_internal on blog.projects;
+create policy projects_select_internal
+on blog.projects
+for select
+using (blog.is_allowed_user());
+
+drop policy if exists projects_insert_own on blog.projects;
+create policy projects_insert_own
+on blog.projects
+for insert
+with check (blog.is_allowed_user() and auth.uid() = owner_user_id);
+
+drop policy if exists projects_update_own on blog.projects;
+create policy projects_update_own
+on blog.projects
+for update
+using (blog.is_allowed_user() and auth.uid() = owner_user_id)
+with check (blog.is_allowed_user() and auth.uid() = owner_user_id);
+
+drop policy if exists projects_delete_own on blog.projects;
+create policy projects_delete_own
+on blog.projects
+for delete
+using (blog.is_allowed_user() and auth.uid() = owner_user_id);
+
+drop policy if exists project_posts_select_internal on blog.project_posts;
+create policy project_posts_select_internal
+on blog.project_posts
+for select
+using (blog.is_allowed_user());
+
+drop policy if exists project_posts_insert_owner on blog.project_posts;
+create policy project_posts_insert_owner
+on blog.project_posts
+for insert
+with check (
+  blog.is_allowed_user()
+  and auth.uid() = linked_by
+  and exists (
+    select 1
+    from blog.projects p
+    where p.id = project_id and p.owner_user_id = auth.uid()
+  )
+);
+
+drop policy if exists project_posts_delete_owner on blog.project_posts;
+create policy project_posts_delete_owner
+on blog.project_posts
+for delete
+using (
+  blog.is_allowed_user()
+  and exists (
+    select 1
+    from blog.projects p
+    where p.id = project_id and p.owner_user_id = auth.uid()
+  )
+);
+
+drop policy if exists project_status_history_select_internal on blog.project_status_history;
+create policy project_status_history_select_internal
+on blog.project_status_history
+for select
+using (blog.is_allowed_user());
+
+drop policy if exists project_status_history_insert_owner on blog.project_status_history;
+create policy project_status_history_insert_owner
+on blog.project_status_history
+for insert
+with check (
+  blog.is_allowed_user()
+  and auth.uid() = changed_by
+  and exists (
+    select 1
+    from blog.projects p
+    where p.id = project_id and p.owner_user_id = auth.uid()
+  )
+);
+
+drop policy if exists project_edit_history_select_internal on blog.project_edit_history;
+create policy project_edit_history_select_internal
+on blog.project_edit_history
+for select
+using (blog.is_allowed_user());
+
+drop policy if exists project_edit_history_insert_owner on blog.project_edit_history;
+create policy project_edit_history_insert_owner
+on blog.project_edit_history
+for insert
+with check (
+  blog.is_allowed_user()
+  and auth.uid() = edited_by
+  and exists (
+    select 1
+    from blog.projects p
+    where p.id = project_id and p.owner_user_id = auth.uid()
+  )
+);
 
 create or replace function blog.invest_in_post(target_post_id uuid, investment_amount integer)
 returns table(status text, detail text)
