@@ -1,6 +1,8 @@
 name: Release Supabase Migration
 
 on:
+  push:
+    branches: [main]
   release:
     types: [published]
   workflow_dispatch:
@@ -20,12 +22,54 @@ jobs:
       - name: Apply schema migration
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
+          SUPABASE_DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
+          SUPABASE_DB_NAME: ${{ secrets.SUPABASE_DB_NAME }}
+          SUPABASE_DB_USER: ${{ secrets.SUPABASE_DB_USER }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          if [ -z "$SUPABASE_DB_URL" ]; then
-            echo "Missing SUPABASE_DB_URL secret"
+          set -euo pipefail
+
+          CONN_TARGET=""
+          DB_HOST=""
+
+          if [ -n "${SUPABASE_DB_HOST:-}" ] && [ -n "${SUPABASE_DB_PORT:-}" ] && [ -n "${SUPABASE_DB_NAME:-}" ] && [ -n "${SUPABASE_DB_USER:-}" ] && [ -n "${SUPABASE_DB_PASSWORD:-}" ]; then
+            DB_HOST="$SUPABASE_DB_HOST"
+            export PGHOST="$SUPABASE_DB_HOST"
+            export PGPORT="$SUPABASE_DB_PORT"
+            export PGDATABASE="$SUPABASE_DB_NAME"
+            export PGUSER="$SUPABASE_DB_USER"
+            export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+            export PGSSLMODE="require"
+          elif [ -n "${SUPABASE_DB_URL:-}" ]; then
+            CONN_TARGET="$SUPABASE_DB_URL"
+            DB_HOST="$(echo "$SUPABASE_DB_URL" | sed -E 's#.*@([^:/?]+).*#\1#')"
+          else
+            echo "Missing database credentials. Set SUPABASE_DB_URL or all SUPABASE_DB_HOST, SUPABASE_DB_PORT, SUPABASE_DB_NAME, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD."
             exit 1
           fi
 
-          psql "$SUPABASE_DB_URL" \
-            -v ON_ERROR_STOP=1 \
-            -f supabase/blog_schema.sql
+          DB_HOST_IPV4="$(getent ahostsv4 "$DB_HOST" | awk 'NR==1 { print $1 }')"
+          if [ -n "$DB_HOST_IPV4" ]; then
+            echo "Using IPv4 host address for migration connection"
+            export PGHOSTADDR="$DB_HOST_IPV4"
+          fi
+
+          set +e
+          if [ -n "$CONN_TARGET" ]; then
+            PSQL_OUTPUT="$(psql "$CONN_TARGET" -v ON_ERROR_STOP=1 -f supabase/blog_schema.sql 2>&1)"
+            PSQL_EXIT_CODE=$?
+          else
+            PSQL_OUTPUT="$(psql -v ON_ERROR_STOP=1 -f supabase/blog_schema.sql 2>&1)"
+            PSQL_EXIT_CODE=$?
+          fi
+          set -e
+
+          echo "$PSQL_OUTPUT"
+
+          if [ "$PSQL_EXIT_CODE" -ne 0 ]; then
+            if echo "$PSQL_OUTPUT" | grep -Eqi 'Wrong password|password authentication failed|SCRAM'; then
+              echo "::error::Database authentication failed. Verify your production credentials. If using SUPABASE_DB_URL, ensure password special characters are URL-encoded."
+            fi
+            exit "$PSQL_EXIT_CODE"
+          fi
