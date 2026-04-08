@@ -15,11 +15,18 @@ export function sumAmounts(rows: Array<{ amount?: number | null; investment_eur?
 }
 
 export async function getUserInvestmentSummary(supabase: SupabaseClient, userId: string): Promise<UserInvestmentSummary> {
-  const { data: authoredPosts } = await supabase
-    .schema("blog")
-    .from("posts")
-    .select("id, investment_eur")
-    .eq("author_id", userId);
+  const [{ data: authoredPosts }, { data: spentInvestments }] = await Promise.all([
+    supabase
+      .schema("blog")
+      .from("posts")
+      .select("id, investment_eur")
+      .eq("author_id", userId),
+    supabase
+      .schema("blog")
+      .from("post_investments")
+      .select("amount")
+      .eq("investor_id", userId),
+  ]);
 
   const totalAngelReceived = sumAmounts(authoredPosts ?? []);
   const authoredPostIds = (authoredPosts ?? []).map((post) => post.id);
@@ -33,12 +40,6 @@ export async function getUserInvestmentSummary(supabase: SupabaseClient, userId:
       .in("post_id", authoredPostIds);
     totalCommunityReceived = sumAmounts(receivedInvestments ?? []);
   }
-
-  const { data: spentInvestments } = await supabase
-    .schema("blog")
-    .from("post_investments")
-    .select("amount")
-    .eq("investor_id", userId);
 
   const totalSpent = sumAmounts(spentInvestments ?? []);
   const totalReceived = totalAngelReceived + totalCommunityReceived;

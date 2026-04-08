@@ -199,7 +199,7 @@ export async function investInPost(formData: FormData) {
     redirect(appendInvestStatus(redirectTo, "invalid_amount"));
   }
 
-  const { data: resultRows, error } = await supabase.rpc("invest_in_post", {
+  const { data: resultRows, error } = await supabase.schema("blog").rpc("invest_in_post", {
     target_post_id: postId,
     investment_amount: Math.round(amount),
   });
