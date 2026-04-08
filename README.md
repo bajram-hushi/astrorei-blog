@@ -52,6 +52,17 @@ Note:
 
 Open `http://localhost:3333`.
 
+## PWA Support
+
+ReiLabs now includes a basic Progressive Web App setup:
+
+- Web manifest via `src/app/manifest.ts`
+- App icon via `src/app/icon.svg`
+- Service worker via `public/sw.js`
+- Client-side registration in the root layout
+
+This makes the app installable on supported browsers and caches static assets for faster reloads.
+
 ## Production Migrations (Supabase Environments)
 
 This repo now follows Supabase's environment management workflow using Supabase CLI migrations.
