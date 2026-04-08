@@ -45,6 +45,11 @@ npm install
 npm run dev
 ```
 
+Note:
+
+- `npm run dev` and `npm run start` now run database migration first.
+- Auto-migration runs only when `SUPABASE_DB_URL` is set; otherwise it is skipped with a message.
+
 Open `http://localhost:3333`.
 
 ## Production Release Migrations (Supabase)
