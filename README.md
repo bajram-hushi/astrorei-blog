@@ -89,12 +89,26 @@ Useful local commands:
 supabase migration new <name>
 supabase db reset
 supabase db push
+npm run push:vapid
 ```
 
 Notes:
 
 - `supabase/blog_schema.sql` is retained as a full schema reference.
 - CI/CD deployments use migration files under `supabase/migrations`.
+
+## Web Push Setup
+
+Environment variables required for web push:
+
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT` (example: `mailto:reilabs@astrorei.io`)
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Use `npm run push:vapid` to generate a fresh VAPID key pair.
+
+Web push subscriptions are stored in the database and are tied to the authenticated user/device.
 
 ## Authentication Rules
 

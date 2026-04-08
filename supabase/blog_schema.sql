@@ -98,6 +98,33 @@ create table if not exists blog.notifications (
   constraint notification_no_self check (recipient_id <> actor_id)
 );
 
+create table if not exists blog.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  endpoint text not null unique,
+  p256dh_key text not null,
+  auth_key text not null,
+  device_label text,
+  user_agent text,
+  enabled boolean not null default true,
+  last_seen timestamptz not null default now(),
+  last_push_sent_at timestamptz,
+  failure_count integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists blog.notification_push_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  notification_id uuid not null references blog.notifications (id) on delete cascade,
+  subscription_id uuid not null references blog.push_subscriptions (id) on delete cascade,
+  status text not null check (status in ('sent', 'failed', 'invalid')),
+  response_code integer,
+  error_message text,
+  created_at timestamptz not null default now(),
+  unique (notification_id, subscription_id)
+);
+
 create table if not exists blog.post_investments (
   id uuid primary key default gen_random_uuid(),
   post_id uuid not null references blog.posts (id) on delete cascade,
@@ -187,6 +214,7 @@ grant select, insert, update, delete on blog.project_status_history to authentic
 grant select, insert on blog.project_edit_history to authenticated;
 
 grant select, insert, update, delete on blog.notifications to authenticated;
+grant select, insert, update, delete on blog.push_subscriptions to authenticated;
 
 create index if not exists idx_comments_post_parent_created_at
 on blog.comments (post_id, parent_id, created_at);
@@ -205,6 +233,18 @@ on blog.notifications (post_id);
 
 create index if not exists idx_notifications_comment_id
 on blog.notifications (comment_id);
+
+create index if not exists idx_push_subscriptions_user_enabled
+on blog.push_subscriptions (user_id, enabled);
+
+create index if not exists idx_push_subscriptions_last_seen
+on blog.push_subscriptions (last_seen desc);
+
+create index if not exists idx_notification_push_deliveries_notification
+on blog.notification_push_deliveries (notification_id);
+
+create index if not exists idx_notification_push_deliveries_subscription
+on blog.notification_push_deliveries (subscription_id);
 
 create index if not exists idx_post_investments_post_id
 on blog.post_investments (post_id);
@@ -304,6 +344,12 @@ before update on blog.projects
 for each row
 execute procedure blog.set_updated_at();
 
+drop trigger if exists trg_push_subscriptions_updated_at on blog.push_subscriptions;
+create trigger trg_push_subscriptions_updated_at
+before update on blog.push_subscriptions
+for each row
+execute procedure blog.set_updated_at();
+
 drop trigger if exists trg_comments_validate_parent on blog.comments;
 create trigger trg_comments_validate_parent
 before insert or update of parent_id, post_id on blog.comments
@@ -320,6 +366,8 @@ alter table blog.projects enable row level security;
 alter table blog.project_posts enable row level security;
 alter table blog.project_status_history enable row level security;
 alter table blog.project_edit_history enable row level security;
+alter table blog.push_subscriptions enable row level security;
+alter table blog.notification_push_deliveries enable row level security;
 
 drop policy if exists posts_select_internal on blog.posts;
 create policy posts_select_internal
@@ -449,6 +497,31 @@ create policy notifications_delete_recipient
 on blog.notifications
 for delete
 using (blog.is_allowed_user() and auth.uid() = recipient_id);
+
+drop policy if exists push_subscriptions_select_own on blog.push_subscriptions;
+create policy push_subscriptions_select_own
+on blog.push_subscriptions
+for select
+using (blog.is_allowed_user() and auth.uid() = user_id);
+
+drop policy if exists push_subscriptions_insert_own on blog.push_subscriptions;
+create policy push_subscriptions_insert_own
+on blog.push_subscriptions
+for insert
+with check (blog.is_allowed_user() and auth.uid() = user_id);
+
+drop policy if exists push_subscriptions_update_own on blog.push_subscriptions;
+create policy push_subscriptions_update_own
+on blog.push_subscriptions
+for update
+using (blog.is_allowed_user() and auth.uid() = user_id)
+with check (blog.is_allowed_user() and auth.uid() = user_id);
+
+drop policy if exists push_subscriptions_delete_own on blog.push_subscriptions;
+create policy push_subscriptions_delete_own
+on blog.push_subscriptions
+for delete
+using (blog.is_allowed_user() and auth.uid() = user_id);
 
 drop policy if exists post_investments_select_internal on blog.post_investments;
 create policy post_investments_select_internal

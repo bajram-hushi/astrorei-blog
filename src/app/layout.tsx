@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PwaRegister } from "../components/pwa-register";
 import "./globals.css";
@@ -27,7 +27,6 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "ReiLabs",
   },
-  themeColor: "#f6f7fb",
   robots: {
     index: false,
     follow: false,
@@ -39,8 +38,11 @@ export const metadata: Metadata = {
   },
 };
 
-export const runtime = "edge";
-export const preferredRegion = "home";
+export const runtime = "nodejs";
+
+export const viewport: Viewport = {
+  themeColor: "#f6f7fb",
+};
 
 export default function RootLayout({
   children,

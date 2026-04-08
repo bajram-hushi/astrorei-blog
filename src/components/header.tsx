@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions";
 import { isAllowedUser } from "@/lib/auth";
 import { resolveProfile } from "@/lib/profile";
+import { LogoEasterEgg } from "@/components/logo-easter-egg";
 
 export async function Header() {
   const supabase = await createClient();
@@ -36,16 +37,7 @@ export async function Header() {
   return (
     <header className="border-b border-zinc-800/20 bg-white/70 backdrop-blur">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="inline-flex items-center" aria-label="ReiLabs home">
-          <Image
-            src="/reilabs-header-logo.svg"
-            alt="ReiLabs"
-            width={190}
-            height={38}
-            priority
-            className="h-9 w-auto sm:h-10"
-          />
-        </Link>
+        <LogoEasterEgg vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()} />
 
         <div className="flex items-center gap-3 text-sm">
           <Link href="/profile" className="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-zinc-100">

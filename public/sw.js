@@ -1,6 +1,32 @@
 const CACHE_NAME = "reilabs-static-v1";
 const STATIC_DESTINATIONS = new Set(["style", "script", "font", "image"]);
 
+function getNotificationPayload(event) {
+  if (!event.data) {
+    return {
+      title: "ReiLabs",
+      body: "Hai una nuova notifica.",
+      icon: "/icon.svg",
+      badge: "/icon.svg",
+      url: "/notifications",
+      tag: "reilabs-notification",
+    };
+  }
+
+  try {
+    return event.data.json();
+  } catch {
+    return {
+      title: "ReiLabs",
+      body: event.data.text() || "Hai una nuova notifica.",
+      icon: "/icon.svg",
+      badge: "/icon.svg",
+      url: "/notifications",
+      tag: "reilabs-notification",
+    };
+  }
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });
@@ -60,5 +86,40 @@ self.addEventListener("fetch", (event) => {
       }
       return response;
     })(),
+  );
+});
+
+self.addEventListener("push", (event) => {
+  const payload = getNotificationPayload(event);
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "ReiLabs", {
+      body: payload.body || "Hai una nuova notifica.",
+      icon: payload.icon || "/icon.svg",
+      badge: payload.badge || "/icon.svg",
+      tag: payload.tag || `notification-${Date.now()}`,
+      data: {
+        url: payload.url || "/notifications",
+      },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification.data?.url || "/notifications";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existingClient = clients.find((client) => client.url.includes(self.location.origin));
+
+      if (existingClient) {
+        existingClient.navigate(targetUrl);
+        return existingClient.focus();
+      }
+
+      return self.clients.openWindow(targetUrl);
+    }),
   );
 });

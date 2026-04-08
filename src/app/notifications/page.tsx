@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/header";
+import { PushNotificationsToggle } from "@/components/push-notifications-toggle";
 import { markAllNotificationsRead } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser } from "@/lib/auth";
@@ -49,6 +50,13 @@ export default async function NotificationsPage() {
     .eq("recipient_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
+
+  const { count: enabledPushSubscriptions } = await supabase
+    .schema("blog")
+    .from("push_subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("enabled", true);
 
   const rows = (notifications ?? []) as NotificationRow[];
   const actorIds = Array.from(new Set(rows.map((row) => row.actor_id)));
@@ -99,6 +107,13 @@ export default async function NotificationsPage() {
               </button>
             </form>
           )}
+        </div>
+
+        <div className="mb-6">
+          <PushNotificationsToggle
+            initialEnabled={Boolean(enabledPushSubscriptions && enabledPushSubscriptions > 0)}
+            vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()}
+          />
         </div>
 
         {!rows.length ? (
