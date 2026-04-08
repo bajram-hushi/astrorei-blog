@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { addComment, evaluatePostInvestment, investInPost, voteComment } from "@/app/actions";
 import { Header } from "@/components/header";
 import { PostContent } from "@/components/post-content";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedUser } from "@/lib/auth";
 import { BlogProfile } from "@/lib/profile";
@@ -173,26 +174,26 @@ export default async function PostPage({ params, searchParams }: Props) {
               <input type="hidden" name="post_id" value={postData.id} />
               <input type="hidden" name="comment_id" value={comment.id} />
               <input type="hidden" name="vote" value="1" />
-              <button
-                type="submit"
+              <PendingSubmitButton
                 className={`rounded px-1.5 py-0.5 text-[10px] ${userVote === 1 ? "bg-emerald-600 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"}`}
-                aria-label="Upvote comment"
+                ariaLabel="Upvote comment"
+                pendingText="..."
               >
                 ▲
-              </button>
+              </PendingSubmitButton>
             </form>
             <span className="text-[10px] font-semibold text-zinc-700">{score}</span>
             <form action={voteComment}>
               <input type="hidden" name="post_id" value={postData.id} />
               <input type="hidden" name="comment_id" value={comment.id} />
               <input type="hidden" name="vote" value="-1" />
-              <button
-                type="submit"
+              <PendingSubmitButton
                 className={`rounded px-1.5 py-0.5 text-[10px] ${userVote === -1 ? "bg-red-600 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"}`}
-                aria-label="Downvote comment"
+                ariaLabel="Downvote comment"
+                pendingText="..."
               >
                 ▼
-              </button>
+              </PendingSubmitButton>
             </form>
           </div>
 
@@ -235,12 +236,12 @@ export default async function PostPage({ params, searchParams }: Props) {
                   className="w-full rounded-md border border-zinc-300 px-2.5 py-1.5 text-xs"
                   placeholder="Write a reply"
                 />
-                <button
-                  type="submit"
+                <PendingSubmitButton
                   className="rounded-md bg-zinc-900 px-2.5 py-1 text-[11px] text-white hover:bg-zinc-700"
+                  pendingText="Replying..."
                 >
                   Reply
-                </button>
+                </PendingSubmitButton>
               </form>
             </details>
 
@@ -395,12 +396,12 @@ export default async function PostPage({ params, searchParams }: Props) {
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
               placeholder="Write your comment"
             />
-            <button
-              type="submit"
+            <PendingSubmitButton
               className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700"
+              pendingText="Adding..."
             >
               Add Comment
-            </button>
+            </PendingSubmitButton>
           </form>
 
           <div className="mt-4 space-y-2">
