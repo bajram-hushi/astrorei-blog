@@ -18,15 +18,15 @@ export const revalidate = 30;
 function evalMessage(status?: string, detail?: string) {
   switch (status) {
     case "evaluated":
-      return { tone: "success", text: "Angel investor evaluation completed." } as const;
+      return { tone: "success", text: "Valutazione angel investor completata." } as const;
     case "already_evaluated":
-      return { tone: "info", text: "This post was already evaluated." } as const;
+      return { tone: "info", text: "Questo post è già stato valutato." } as const;
     case "missing_openai_key":
-      return { tone: "error", text: "OPENAI_API_KEY is missing. Add it to your environment and retry." } as const;
+      return { tone: "error", text: "OPENAI_API_KEY mancante. Aggiungila all'ambiente e riprova." } as const;
     case "evaluation_failed":
-      return { tone: "error", text: "OpenAI evaluation failed. Check model/key and try again." } as const;
+      return { tone: "error", text: "Valutazione OpenAI fallita. Controlla il modello/chiave e riprova." } as const;
     case "db_update_failed":
-      return { tone: "error", text: detail ? `Could not save evaluation: ${detail}` : "Could not save evaluation." } as const;
+      return { tone: "error", text: detail ? `Impossibile salvare la valutazione: ${detail}` : "Impossibile salvare la valutazione." } as const;
     default:
       return null;
   }
@@ -37,23 +37,23 @@ function investMessage(status?: string, detail?: string) {
     case "invested":
       return {
         tone: "success",
-        text: detail ? `Investment placed. Remaining balance: EUR ${formatEurCompact(Number(detail))}.` : "Investment placed.",
+        text: detail ? `Investimento effettuato. Saldo rimanente: EUR ${formatEurCompact(Number(detail))}.` : "Investimento effettuato.",
       } as const;
     case "insufficient_funds":
       return {
         tone: "error",
-        text: `Insufficient balance. You can invest up to EUR ${formatEurCompact(Number(detail ?? 0))}.`,
+        text: `Saldo insufficiente. Puoi investire fino a EUR ${formatEurCompact(Number(detail ?? 0))}.`,
       } as const;
     case "own_post":
-      return { tone: "error", text: "You cannot invest in your own post." } as const;
+      return { tone: "error", text: "Non puoi investire nel tuo stesso post." } as const;
     case "invalid_amount":
-      return { tone: "error", text: "Enter a positive investment amount." } as const;
+      return { tone: "error", text: "Inserisci un importo di investimento positivo." } as const;
     case "missing_post_id":
-      return { tone: "error", text: "Missing post id for investment." } as const;
+      return { tone: "error", text: "ID post mancante per l'investimento." } as const;
     case "post_not_found":
-      return { tone: "error", text: "Post not found for investment." } as const;
+      return { tone: "error", text: "Post non trovato per l'investimento." } as const;
     case "db_update_failed":
-      return { tone: "error", text: detail ? `Could not save investment: ${detail}` : "Could not save investment." } as const;
+      return { tone: "error", text: detail ? `Impossibile salvare l'investimento: ${detail}` : "Impossibile salvare l'investimento." } as const;
     default:
       return null;
   }
@@ -137,7 +137,7 @@ export default async function PostPage({ params, searchParams }: Props) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={authorProfile.avatar_url}
-                  alt="Author avatar"
+                  alt="Avatar autore"
                   className="h-7 w-7 rounded-full object-cover"
                 />
               ) : (
@@ -159,7 +159,7 @@ export default async function PostPage({ params, searchParams }: Props) {
           </div>
           {!!projectLinks?.length && (
             <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">Linked Projects</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">Progetti collegati</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {projectLinks.map((link) => {
                   const project = Array.isArray(link.projects) ? link.projects[0] : link.projects;
@@ -183,10 +183,10 @@ export default async function PostPage({ params, searchParams }: Props) {
           )}
           {post.investment_eur !== null && post.investment_eur !== undefined && (
             <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Angel Investor Decision</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Decisione Angel Investor</p>
               <p className="mt-1 text-lg font-bold text-emerald-900">
                 EUR {formatEurCompact(post.investment_eur)}
-                {post.investment_confidence ? ` (${post.investment_confidence}% confidence)` : ""}
+                {post.investment_confidence ? ` (${post.investment_confidence}% confidenza)` : ""}
               </p>
               {post.investment_thesis && (
                 <p className="mt-1 text-sm text-emerald-900/85">{post.investment_thesis}</p>
@@ -201,7 +201,7 @@ export default async function PostPage({ params, searchParams }: Props) {
                 type="submit"
                 className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
-                Evaluate with Angel Investor
+                Valuta con Angel Investor
               </button>
             </form>
           )}

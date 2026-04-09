@@ -14,12 +14,12 @@ type Props = {
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins}m fa`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours}h fa`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  if (days < 30) return `${days}g fa`;
+  return new Date(dateStr).toLocaleDateString("it-IT", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default async function UserProfilePage({ params }: Props) {
@@ -78,7 +78,7 @@ export default async function UserProfilePage({ params }: Props) {
   }
 
   const memberSince = profile?.created_at
-    ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    ? new Date(profile.created_at).toLocaleDateString("it-IT", { month: "long", year: "numeric" })
     : null;
 
   return (
@@ -90,7 +90,7 @@ export default async function UserProfilePage({ params }: Props) {
         <div className="flex items-center gap-5 rounded-xl border border-zinc-200 bg-white p-6">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt={`${username}'s avatar`} className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-100" />
+            <img src={avatarUrl} alt={`Avatar di ${username}`} className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-100" />
           ) : (
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xl font-bold text-zinc-600">
               {username.slice(0, 1).toUpperCase()}
@@ -98,18 +98,18 @@ export default async function UserProfilePage({ params }: Props) {
           )}
           <div className="flex-1 min-w-0">
             <p className="text-xl font-bold truncate">{username}</p>
-            {memberSince && <p className="text-xs text-zinc-400 mt-0.5">Member since {memberSince}</p>}
+            {memberSince && <p className="text-xs text-zinc-400 mt-0.5">Membro dal {memberSince}</p>}
           </div>
         </div>
 
         {/* ── Stats ── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
-            { label: "Posts", value: posts?.length ?? 0 },
-            { label: "Comments", value: comments?.length ?? 0 },
-            { label: "Votes received", value: totalVotesReceived },
-            { label: "Angel invested", value: `EUR ${formatEurCompact(investmentSummary.totalAngelReceived)}` },
-            { label: "Team invested", value: `EUR ${formatEurCompact(investmentSummary.totalCommunityReceived)}` },
+            { label: "Post", value: posts?.length ?? 0 },
+            { label: "Commenti", value: comments?.length ?? 0 },
+            { label: "Voti ricevuti", value: totalVotesReceived },
+            { label: "Angel investito", value: `EUR ${formatEurCompact(investmentSummary.totalAngelReceived)}` },
+            { label: "Investito dal team", value: `EUR ${formatEurCompact(investmentSummary.totalCommunityReceived)}` },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-lg border border-zinc-200 bg-white p-4 text-center">
               <p className="text-2xl font-bold">{value}</p>
@@ -120,9 +120,9 @@ export default async function UserProfilePage({ params }: Props) {
 
         {/* ── Posts ── */}
         <section>
-          <h2 className="mb-3 text-base font-semibold">Posts by {username}</h2>
+          <h2 className="mb-3 text-base font-semibold">Post di {username}</h2>
           {!posts?.length ? (
-            <p className="text-sm text-zinc-500">No posts yet.</p>
+            <p className="text-sm text-zinc-500">Nessun post ancora.</p>
           ) : (
             <ul className="space-y-2">
               {posts.map((post) => (
@@ -139,20 +139,20 @@ export default async function UserProfilePage({ params }: Props) {
 
         {/* ── Comments ── */}
         <section>
-          <h2 className="mb-3 text-base font-semibold">Comments by {username}</h2>
+          <h2 className="mb-3 text-base font-semibold">Commenti di {username}</h2>
           {!comments?.length ? (
-            <p className="text-sm text-zinc-500">No comments yet.</p>
+            <p className="text-sm text-zinc-500">Nessun commento ancora.</p>
           ) : (
             <ul className="space-y-2">
               {comments.map((comment) => {
-                const postTitle = postTitleMap.get(comment.post_id) ?? "Untitled post";
+                const postTitle = postTitleMap.get(comment.post_id) ?? "Post senza titolo";
                 const snippet = comment.body.replace(/<[^>]+>/g, "").slice(0, 120);
                 const score = commentScoreMap.get(comment.id) ?? 0;
                 return (
                   <li key={comment.id} className="rounded-lg border border-zinc-200 bg-white px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <Link href={`/post/${comment.post_id}`} className="text-xs font-medium text-zinc-500 hover:underline">
-                        on: {postTitle}
+                        su: {postTitle}
                       </Link>
                       <span
                         className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${

@@ -16,19 +16,19 @@ type Props = {
 function evalMessage(status?: string, detail?: string) {
   switch (status) {
     case "evaluated":
-      return { tone: "success", text: "Angel investor evaluation completed." } as const;
+      return { tone: "success", text: "Valutazione angel investor completata." } as const;
     case "already_evaluated":
-      return { tone: "info", text: "This post was already evaluated." } as const;
+      return { tone: "info", text: "Questo post è già stato valutato." } as const;
     case "missing_openai_key":
-      return { tone: "error", text: "OPENAI_API_KEY is missing. Add it to your environment and retry." } as const;
+      return { tone: "error", text: "OPENAI_API_KEY mancante. Aggiungila all'ambiente e riprova." } as const;
     case "evaluation_failed":
-      return { tone: "error", text: "OpenAI evaluation failed. Check model/key and try again." } as const;
+      return { tone: "error", text: "Valutazione OpenAI fallita. Controlla il modello/chiave e riprova." } as const;
     case "db_update_failed":
-      return { tone: "error", text: detail ? `Could not save evaluation: ${detail}` : "Could not save evaluation." } as const;
+      return { tone: "error", text: detail ? `Impossibile salvare la valutazione: ${detail}` : "Impossibile salvare la valutazione." } as const;
     case "post_not_found":
-      return { tone: "error", text: "Post not found for evaluation." } as const;
+      return { tone: "error", text: "Post non trovato per la valutazione." } as const;
     case "missing_post_id":
-      return { tone: "error", text: "Missing post id for evaluation." } as const;
+      return { tone: "error", text: "ID post mancante per la valutazione." } as const;
     default:
       return null;
   }
@@ -84,19 +84,19 @@ export default async function Home({ searchParams }: Props) {
           </p>
         )}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Recent Posts</h1>
+          <h1 className="text-2xl font-bold">Post recenti</h1>
           <div className="flex items-center gap-2">
             <Link
               href="/projects"
               className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100"
             >
-              Projects
+              Progetti
             </Link>
             <Link
               href="/new"
               className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
             >
-              Create Post
+              Crea post
             </Link>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default async function Home({ searchParams }: Props) {
                   <p className="mt-1 text-xs font-medium text-zinc-700">
                     Angel investor: EUR {formatEurCompact(post.investment_eur)}
                     {post.investment_confidence
-                      ? ` (confidence ${post.investment_confidence}%)`
+                      ? ` (confidenza ${post.investment_confidence}%)`
                       : ""}
                   </p>
                 )}
@@ -131,7 +131,7 @@ export default async function Home({ searchParams }: Props) {
                     type="submit"
                     className="rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
                   >
-                    Evaluate with Angel Investor
+                    Valuta con Angel Investor
                   </button>
                 </form>
               )}
@@ -148,7 +148,7 @@ export default async function Home({ searchParams }: Props) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={profileMap.get(post.author_id)?.avatar_url ?? ""}
-                      alt="Author avatar"
+                      alt="Avatar autore"
                       className="h-6 w-6 rounded-full object-cover"
                     />
                   ) : (
@@ -176,7 +176,7 @@ export default async function Home({ searchParams }: Props) {
 
           {!posts?.length && (
             <p className="rounded-lg border border-dashed border-zinc-300 bg-white p-6 text-zinc-600">
-              No posts yet. Create your first internal post.
+              Nessun post ancora. Crea il tuo primo post interno.
             </p>
           )}
         </div>

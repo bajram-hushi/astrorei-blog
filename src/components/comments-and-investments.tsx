@@ -59,7 +59,7 @@ export function CommentsAndInvestments({
         ]);
 
         if (!commentsRes.ok || !investmentsRes.ok) {
-          throw new Error("Failed to load data");
+          throw new Error("Caricamento dati fallito");
         }
 
         const commentsData = await commentsRes.json();
@@ -112,7 +112,7 @@ export function CommentsAndInvestments({
               <input type="hidden" name="vote" value="1" />
               <PendingSubmitButton
                 className={`rounded px-1.5 py-0.5 text-[10px] ${userVote === 1 ? "bg-emerald-600 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"}`}
-                ariaLabel="Upvote comment"
+                ariaLabel="Vota positivo"
                 pendingText="..."
               >
                 ▲
@@ -125,7 +125,7 @@ export function CommentsAndInvestments({
               <input type="hidden" name="vote" value="-1" />
               <PendingSubmitButton
                 className={`rounded px-1.5 py-0.5 text-[10px] ${userVote === -1 ? "bg-red-600 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"}`}
-                ariaLabel="Downvote comment"
+                ariaLabel="Vota negativo"
                 pendingText="..."
               >
                 ▼
@@ -143,7 +143,7 @@ export function CommentsAndInvestments({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={profile.avatar_url}
-                    alt="Comment author avatar"
+                    alt="Avatar autore del commento"
                     className="h-4 w-4 rounded-full object-cover"
                   />
                 ) : (
@@ -160,7 +160,7 @@ export function CommentsAndInvestments({
 
             <details className="mt-2">
               <summary className="cursor-pointer text-[11px] font-medium text-zinc-600 hover:text-zinc-900">
-                Reply
+                Rispondi
               </summary>
               <form action={addComment} className="mt-1.5 space-y-1.5">
                 <input type="hidden" name="post_id" value={postId} />
@@ -170,13 +170,13 @@ export function CommentsAndInvestments({
                   required
                   rows={2}
                   className="w-full rounded-md border border-zinc-300 px-2.5 py-1.5 text-xs"
-                  placeholder="Write a reply"
+                  placeholder="Scrivi una risposta"
                 />
                 <PendingSubmitButton
                   className="rounded-md bg-zinc-900 px-2.5 py-1 text-[11px] text-white hover:bg-zinc-700"
-                  pendingText="Replying..."
+                  pendingText="Invio risposta..."
                 >
-                  Reply
+                  Rispondi
                 </PendingSubmitButton>
               </form>
             </details>
@@ -193,29 +193,29 @@ export function CommentsAndInvestments({
   return (
     <>
       <section className="mt-8 rounded-lg border border-sky-200 bg-sky-50 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Team Investment Pool</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Pool investimento team</p>
         {loading ? (
-          <p className="mt-2 text-sm text-sky-700">Loading investment data...</p>
+          <p className="mt-2 text-sm text-sky-700">Caricamento dati investimento...</p>
         ) : error ? (
-          <p className="mt-2 text-sm text-red-700">Error loading investments: {error}</p>
+          <p className="mt-2 text-sm text-red-700">Errore nel caricamento degli investimenti: {error}</p>
         ) : (
           <>
             <p className="mt-1 text-lg font-bold text-sky-950">EUR {formatEurCompact(communityInvestmentTotal)}</p>
             {myPostInvestment > 0 && (
               <p className="mt-1 text-sm text-sky-900/85">
-                You have invested EUR {formatEurCompact(myPostInvestment)} in this post.
+                Hai investito EUR {formatEurCompact(myPostInvestment)} in questo post.
               </p>
             )}
             {canInvestInPost && (
               <div className="mt-3 space-y-3">
                 <p className="text-sm text-sky-900/85">
-                  Available to invest: EUR {formatEurCompact(userInvestmentSummary.availableToInvest)}
+                  Disponibile da investire: EUR {formatEurCompact(userInvestmentSummary.availableToInvest)}
                 </p>
                 <form action={investInPost} className="flex flex-col gap-2 sm:flex-row sm:items-end">
                   <input type="hidden" name="post_id" value={postId} />
                   <input type="hidden" name="redirect_to" value={`/post/${postId}`} />
                   <label className="block">
-                    <span className="mb-1 block text-xs font-medium text-sky-800">Invest amount (EUR)</span>
+                    <span className="mb-1 block text-xs font-medium text-sky-800">Importo investimento (EUR)</span>
                     <input
                       type="number"
                       name="amount"
@@ -231,20 +231,20 @@ export function CommentsAndInvestments({
                     className="rounded-md bg-sky-700 px-3 py-2 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={userInvestmentSummary.availableToInvest <= 0}
                   >
-                    Invest in Post
+                    Investi nel post
                   </button>
                 </form>
               </div>
             )}
             {!canInvestInPost && (
-              <p className="mt-2 text-sm text-sky-900/85">You cannot invest in your own post.</p>
+              <p className="mt-2 text-sm text-sky-900/85">Non puoi investire nel tuo stesso post.</p>
             )}
           </>
         )}
       </section>
 
       <section className="mt-8 rounded-lg border border-zinc-200 bg-white p-6">
-        <h2 className="text-xl font-semibold">Comments</h2>
+        <h2 className="text-xl font-semibold">Commenti</h2>
 
         <form action={addComment} className="mt-3 space-y-2">
           <input type="hidden" name="post_id" value={postId} />
@@ -253,24 +253,24 @@ export function CommentsAndInvestments({
             required
             rows={3}
             className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            placeholder="Write your comment"
+            placeholder="Scrivi il tuo commento"
           />
           <PendingSubmitButton
             className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700"
-            pendingText="Adding..."
+            pendingText="Aggiunta..."
           >
-            Add Comment
+            Aggiungi commento
           </PendingSubmitButton>
         </form>
 
         {loading ? (
-          <p className="mt-4 text-zinc-600">Loading comments...</p>
+          <p className="mt-4 text-zinc-600">Caricamento commenti...</p>
         ) : error ? (
-          <p className="mt-4 text-red-700">Error loading comments: {error}</p>
+          <p className="mt-4 text-red-700">Errore nel caricamento dei commenti: {error}</p>
         ) : (
           <div className="mt-4 space-y-2">
             {(childrenMap.get(null) ?? []).map((comment) => renderComment(comment, 0))}
-            {!comments.length && <p className="text-zinc-600">No comments yet.</p>}
+            {!comments.length && <p className="text-zinc-600">Nessun commento ancora.</p>}
           </div>
         )}
       </section>

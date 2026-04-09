@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "ReiLabs",
     short_name: "ReiLabs",
-    description: "Internal platform for ideas, posts, projects, and team decisions.",
+    description: "Piattaforma interna per idee, post, progetti e decisioni del team.",
     start_url: "/",
     scope: "/",
     display: "standalone",
@@ -13,7 +13,7 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#f6f7fb",
     theme_color: "#f6f7fb",
     categories: ["productivity", "business", "collaboration"],
-    lang: "en",
+    lang: "it",
     icons: [
       {
         src: "/icon.svg",

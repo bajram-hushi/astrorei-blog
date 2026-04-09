@@ -15,35 +15,35 @@ function statusMessage(statusUpdated?: string, projectUpdated?: string, error?: 
   if (error) {
     return {
       tone: "error" as const,
-      text: detail ? `Action failed: ${detail}` : `Action failed: ${error}`,
+      text: detail ? `Azione fallita: ${detail}` : `Azione fallita: ${error}`,
     };
   }
 
   if (statusUpdated === "1") {
     return {
       tone: "success" as const,
-      text: "Project status updated.",
+      text: "Stato del progetto aggiornato.",
     };
   }
 
   if (statusUpdated === "0") {
     return {
       tone: "info" as const,
-      text: "Status unchanged.",
+      text: "Stato invariato.",
     };
   }
 
   if (projectUpdated === "1") {
     return {
       tone: "success" as const,
-      text: "Project details updated.",
+      text: "Dettagli del progetto aggiornati.",
     };
   }
 
   if (projectUpdated === "0") {
     return {
       tone: "info" as const,
-      text: "No project detail changes detected.",
+      text: "Nessuna modifica rilevata nei dettagli del progetto.",
     };
   }
 
@@ -73,17 +73,17 @@ function asStringRecord(value: unknown): Record<string, string | null> {
 function fieldLabel(field: string) {
   switch (field) {
     case "website_url":
-      return "Website";
+      return "Sito web";
     case "github_repo_url":
       return "GitHub";
     case "summary_format":
-      return "Summary Format";
+      return "Formato riepilogo";
     case "image_url":
-      return "Card Image";
+      return "Immagine card";
     case "title":
-      return "Title";
+      return "Titolo";
     case "summary":
-      return "Summary";
+      return "Riepilogo";
     default:
       return field.replace(/_/g, " ");
   }
@@ -215,7 +215,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{project.title}</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Owner: {owner?.username ?? owner?.email ?? "Unknown"} · Created {new Date(project.created_at).toLocaleDateString()}
+              Proprietario: {owner?.username ?? owner?.email ?? "Sconosciuto"} · Creato il {new Date(project.created_at).toLocaleDateString()}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -225,13 +225,13 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
                   href={`/projects/${project.id}/edit`}
                   className="inline-flex rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
                 >
-                  Edit project details
+                  Modifica dettagli progetto
                 </Link>
                 <ProjectStatusDialog projectId={project.id} currentStatus={project.status} />
               </>
             )}
             <Link href="/projects" className="text-sm text-zinc-700 hover:underline">
-              Back to projects
+              Torna ai progetti
             </Link>
           </div>
         </div>
@@ -242,12 +242,12 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={project.image_url}
-                alt={`${project.title} cover`}
+                alt={`Copertina ${project.title}`}
                 className="mb-4 h-56 w-full rounded-lg object-cover"
               />
             )}
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Summary</h2>
+              <h2 className="text-lg font-semibold">Riepilogo</h2>
               <span className="rounded-full border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700">
                 {project.status}
               </span>
@@ -262,7 +262,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
             <div className="mt-4 space-y-1 text-sm">
               {project.website_url && (
                 <p>
-                  Website: <a href={project.website_url} target="_blank" rel="noreferrer" className="text-zinc-900 underline">{project.website_url}</a>
+                  Sito web: <a href={project.website_url} target="_blank" rel="noreferrer" className="text-zinc-900 underline">{project.website_url}</a>
                 </p>
               )}
               {project.github_repo_url && (
@@ -276,7 +276,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
 
           <section className="space-y-6">
             <div className="rounded-lg border border-zinc-200 bg-white p-5">
-              <h2 className="text-lg font-semibold">Linked posts</h2>
+              <h2 className="text-lg font-semibold">Post collegati</h2>
               <div className="mt-3 space-y-3">
                 {links?.map((link) => {
                   const post = Array.isArray(link.posts) ? link.posts[0] : link.posts;
@@ -289,39 +289,38 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
                       <Link href={`/post/${post.id}`} className="text-sm font-semibold hover:underline">
                         {post.title}
                       </Link>
-                      <p className="mt-1 text-xs text-zinc-500">Linked {new Date(link.created_at).toLocaleDateString()}</p>
+                      <p className="mt-1 text-xs text-zinc-500">Collegato il {new Date(link.created_at).toLocaleDateString()}</p>
                     </div>
                   );
                 })}
 
-                {!links?.length && <p className="text-sm text-zinc-600">No linked posts yet.</p>}
+                {!links?.length && <p className="text-sm text-zinc-600">Nessun post collegato ancora.</p>}
               </div>
             </div>
 
             <div className="rounded-lg border border-zinc-200 bg-white p-5">
-              <h2 className="text-lg font-semibold">Status history</h2>
+              <h2 className="text-lg font-semibold">Storico stati</h2>
               <div className="mt-3 space-y-3">
                 {history?.map((entry) => {
-                  const changedBy = historyUserMap.get(entry.changed_by);
                   return (
                     <div key={entry.id} className="rounded-md border border-zinc-200 p-3">
                       <p className="text-sm font-medium text-zinc-800">
-                        {entry.from_status ?? "none"}{" -> "}{entry.to_status}
+                        {entry.from_status ?? "nessuno"}{" -> "}{entry.to_status}
                       </p>
                       {entry.rationale && <p className="mt-1 text-sm text-zinc-700">{entry.rationale}</p>}
                       <p className="mt-1 text-xs text-zinc-500">
-                        {changedBy?.username ?? changedBy?.email ?? "Unknown"} · {new Date(entry.created_at).toLocaleString()}
+                        {historyUserMap.get(entry.changed_by)?.username ?? historyUserMap.get(entry.changed_by)?.email ?? "Sconosciuto"} · {new Date(entry.created_at).toLocaleString()}
                       </p>
                     </div>
                   );
                 })}
 
-                {!history?.length && <p className="text-sm text-zinc-600">No status history yet.</p>}
+                {!history?.length && <p className="text-sm text-zinc-600">Nessuno storico stati ancora.</p>}
               </div>
             </div>
 
             <div className="rounded-lg border border-zinc-200 bg-white p-5">
-              <h2 className="text-lg font-semibold">Edit history</h2>
+              <h2 className="text-lg font-semibold">Storico modifiche</h2>
               <div className="mt-3 space-y-3">
                 {editHistory?.map((entry) => {
                   const editedBy = historyUserMap.get(entry.edited_by);
@@ -333,10 +332,10 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
                     <div key={entry.id} className="rounded-md border border-zinc-200 p-3">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-medium text-zinc-800">
-                          {changedFields.length} field{changedFields.length === 1 ? "" : "s"} updated
+                          {changedFields.length} campo{changedFields.length === 1 ? "" : "i"} aggiornato{changedFields.length === 1 ? "" : "i"}
                         </p>
                         <p className="text-xs text-zinc-500">
-                          {editedBy?.username ?? editedBy?.email ?? "Unknown"} · {new Date(entry.created_at).toLocaleString()}
+                          {historyUserMap.get(entry.edited_by)?.username ?? historyUserMap.get(entry.edited_by)?.email ?? "Sconosciuto"} · {new Date(entry.created_at).toLocaleString()}
                         </p>
                       </div>
                       {!!changedFields.length && (
@@ -351,11 +350,11 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
                           ))}
                         </div>
                       )}
-                      {entry.note && <p className="mt-2 text-sm text-zinc-700">Note: {entry.note}</p>}
+                      {entry.note && <p className="mt-2 text-sm text-zinc-700">Nota: {entry.note}</p>}
 
                       {!!changedFields.length && (
                         <details className="mt-2 rounded-md border border-zinc-200 bg-zinc-50 p-2">
-                          <summary className="cursor-pointer text-xs font-medium text-zinc-700">View changes</summary>
+                          <summary className="cursor-pointer text-xs font-medium text-zinc-700">Visualizza modifiche</summary>
                           <ul className="mt-2 space-y-1 text-xs text-zinc-700">
                             {changedFields.map((field) => (
                               <li key={field}>
@@ -370,7 +369,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
                   );
                 })}
 
-                {!editHistory?.length && <p className="text-sm text-zinc-600">No edit history yet.</p>}
+                {!editHistory?.length && <p className="text-sm text-zinc-600">Nessuno storico modifiche ancora.</p>}
               </div>
             </div>
           </section>

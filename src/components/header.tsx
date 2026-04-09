@@ -45,7 +45,7 @@ export async function Header() {
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={resolved.avatarUrl}
-                alt="Your avatar"
+                alt="Il tuo avatar"
                 className="h-7 w-7 rounded-full object-cover"
               />
             ) : (
@@ -59,20 +59,20 @@ export async function Header() {
             href="/new"
             className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100"
           >
-            New Post
-          </Link>
+            Nuovo post
+            </Link>
           <Link
             href="/projects"
             className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100"
           >
-            Projects
+            Progetti
           </Link>
           <Link
             href="/notifications"
             aria-label={
               unreadNotifications && unreadNotifications > 0
-                ? `Notifications (${unreadNotifications} unread)`
-                : "Notifications"
+                ? `Notifiche (${unreadNotifications} non lette)`
+                : "Notifiche"
             }
             className="relative rounded-md border border-zinc-300 p-2 hover:bg-zinc-100"
           >
@@ -100,7 +100,7 @@ export async function Header() {
               type="submit"
               className="rounded-md bg-zinc-900 px-3 py-1.5 text-white hover:bg-zinc-700"
             >
-              Sign out
+              Esci
             </button>
           </form>
         </div>

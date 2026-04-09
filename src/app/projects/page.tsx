@@ -45,11 +45,11 @@ export default async function ProjectsPage() {
       <main className="mx-auto w-full max-w-5xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Projects</h1>
-            <p className="text-sm text-zinc-600">Track ideas from concept to launch and connect posts to projects.</p>
+            <h1 className="text-2xl font-bold">Progetti</h1>
+            <p className="text-sm text-zinc-600">Tieni traccia delle idee dal concept al lancio e collega i post ai progetti.</p>
           </div>
           <Link href="/projects/new" className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700">
-            New Project
+            Nuovo progetto
           </Link>
         </div>
 
@@ -64,7 +64,7 @@ export default async function ProjectsPage() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={project.image_url}
-                        alt={`${project.title} cover`}
+                        alt={`Copertina ${project.title}`}
                         className="h-full w-full rounded-md object-contain"
                       />
                     </div>
@@ -83,7 +83,7 @@ export default async function ProjectsPage() {
                   </div>
                   <p className="mt-2 text-sm text-zinc-700">{summaryPreview(project.summary)}</p>
                   <p className="mt-3 text-xs text-zinc-500">
-                    Owner: {owner?.username ?? owner?.email ?? "Unknown"} · {new Date(project.created_at).toLocaleDateString()}
+                    Proprietario: {owner?.username ?? owner?.email ?? "Sconosciuto"} · {new Date(project.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </article>
@@ -92,7 +92,7 @@ export default async function ProjectsPage() {
 
           {!projects?.length && (
             <p className="rounded-lg border border-dashed border-zinc-300 bg-white p-6 text-zinc-600">
-              No projects yet. Create your first project concept.
+              Nessun progetto ancora. Crea il tuo primo concept di progetto.
             </p>
           )}
         </div>

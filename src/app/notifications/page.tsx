@@ -9,12 +9,12 @@ import { isAllowedUser } from "@/lib/auth";
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return "adesso";
+  if (mins < 60) return `${mins}m fa`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours}h fa`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
+  if (days < 30) return `${days}g fa`;
   return new Date(dateStr).toLocaleDateString();
 }
 
@@ -71,7 +71,10 @@ export default async function NotificationsPage() {
       .in("id", actorIds);
 
     actorNameMap = new Map(
-      (actors ?? []).map((actor) => [actor.id, actor.username?.trim() || actor.email || "Someone"]),
+      (actors ?? []).map((actor) => [
+        actor.id,
+        actor.username?.trim() || actor.email || "Qualcuno",
+      ]),
     );
   }
 
@@ -94,8 +97,11 @@ export default async function NotificationsPage() {
       <main className="mx-auto w-full max-w-3xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">Notifications</h1>
-            <p className="text-sm text-zinc-600">Updates about replies to your comments and comments on your posts.</p>
+            <h1 className="text-2xl font-bold">Notifiche</h1>
+            <p className="text-sm text-zinc-600">
+              Aggiornamenti su risposte ai tuoi commenti e commenti ai tuoi
+              post.
+            </p>
           </div>
           {unreadCount > 0 && (
             <form action={markAllNotificationsRead}>
@@ -103,7 +109,7 @@ export default async function NotificationsPage() {
                 type="submit"
                 className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100"
               >
-                Mark all as read ({unreadCount})
+                `` Segna tutti come letti ({unreadCount})
               </button>
             </form>
           )}
@@ -111,24 +117,26 @@ export default async function NotificationsPage() {
 
         <div className="mb-6">
           <PushNotificationsToggle
-            initialEnabled={Boolean(enabledPushSubscriptions && enabledPushSubscriptions > 0)}
+            initialEnabled={Boolean(
+              enabledPushSubscriptions && enabledPushSubscriptions > 0,
+            )}
             vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()}
           />
         </div>
 
         {!rows.length ? (
           <p className="rounded-lg border border-dashed border-zinc-300 bg-white p-6 text-zinc-600">
-            No notifications yet.
+            Nessuna notifica ancora.
           </p>
         ) : (
           <ul className="space-y-3">
             {rows.map((row) => {
-              const actorName = actorNameMap.get(row.actor_id) ?? "Someone";
-              const postTitle = postTitleMap.get(row.post_id) ?? "a post";
+              const actorName = actorNameMap.get(row.actor_id) ?? "Qualcuno";
+              const postTitle = postTitleMap.get(row.post_id) ?? "un post";
               const message =
                 row.type === "reply_to_comment"
-                  ? `${actorName} replied to your comment on ${postTitle}`
-                  : `${actorName} commented on your post ${postTitle}`;
+                  ? `${actorName} ha risposto al tuo commento su ${postTitle}`
+                  : `${actorName} ha commentato il tuo post ${postTitle}`;
 
               return (
                 <li
@@ -138,10 +146,14 @@ export default async function NotificationsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm text-zinc-800">{message}</p>
-                      <p className="mt-1 text-xs text-zinc-500">{timeAgo(row.created_at)}</p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {timeAgo(row.created_at)}
+                      </p>
                     </div>
                     {!row.read_at && (
-                      <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[11px] text-white">New</span>
+                      <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[11px] text-white">
+                        Nuovo
+                      </span>
                     )}
                   </div>
                   <div className="mt-3">
@@ -149,7 +161,7 @@ export default async function NotificationsPage() {
                       href={`/post/${row.post_id}`}
                       className="text-sm font-medium text-zinc-700 underline-offset-2 hover:underline"
                     >
-                      Open discussion
+                      Apri la discussione
                     </Link>
                   </div>
                 </li>

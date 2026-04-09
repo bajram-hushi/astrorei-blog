@@ -23,14 +23,14 @@ export default async function LoginPage({ searchParams }: Props) {
         />
 
         <p className="text-sm text-zinc-500 mb-6">
-          Sign in with your Google account to continue.
+          Accedi con il tuo account Google per continuare.
         </p>
 
         {params.error && (
           <p className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {params.error === "not_allowed"
-              ? "Your account is not authorised to access ReiLabs."
-              : `Error: ${params.error}`}
+              ? "Il tuo account non è autorizzato ad accedere a ReiLabs."
+              : `Errore: ${params.error}`}
           </p>
         )}
 
@@ -63,7 +63,7 @@ export default async function LoginPage({ searchParams }: Props) {
                 fill="#EA4335"
               />
             </svg>
-            Continue with Google
+            Continua con Google
           </button>
         </form>
       </div>

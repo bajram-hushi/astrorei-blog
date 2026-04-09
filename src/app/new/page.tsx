@@ -12,24 +12,24 @@ type Props = {
 
 function toErrorMessage(code?: string, detail?: string) {
   if (detail?.toLowerCase().includes("invalid schema: blog")) {
-    return "Supabase API does not expose schema 'blog'. In Supabase Dashboard -> Settings -> API -> Exposed schemas, add 'blog', then retry.";
+    return "L'API Supabase non espone lo schema 'blog'. In Supabase Dashboard -> Settings -> API -> Exposed schemas, aggiungi 'blog' e riprova.";
   }
 
   switch (code) {
     case "missing_fields":
-      return "Please add both title and content before publishing.";
+      return "Aggiungi titolo e contenuto prima di pubblicare.";
     case "invalid_content_format":
-      return "Invalid content format selected.";
+      return "Formato contenuto non valido.";
     case "create_post_failed":
       return detail
-        ? `Could not create the post: ${detail}`
-        : "Could not create the post. Check Supabase schema and RLS policies, then try again.";
+        ? `Impossibile creare il post: ${detail}`
+        : "Impossibile creare il post. Controlla lo schema Supabase e le policy RLS, poi riprova.";
     case "project_link_failed":
       return detail
-        ? `Post was created but linking projects failed: ${detail}`
-        : "Post was created but linking selected projects failed.";
+        ? `Post creato ma il collegamento ai progetti è fallito: ${detail}`
+        : "Post creato ma il collegamento ai progetti selezionati è fallito.";
     default:
-      return code ? `Error: ${code}` : "";
+      return code ? `Errore: ${code}` : "";
   }
 }
 
@@ -57,13 +57,13 @@ export default async function NewPostPage({ searchParams }: Props) {
       <main className="mx-auto w-full max-w-[1400px] px-4 py-10 md:px-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Create New Post</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Crea nuovo post</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Write for your internal team using markdown or rich text.
+              Scrivi per il tuo team interno con markdown o testo arricchito.
             </p>
           </div>
           <Link href="/" className="text-sm text-zinc-700 hover:underline">
-            Back to posts
+            Torna ai post
           </Link>
         </div>
 
@@ -78,12 +78,12 @@ export default async function NewPostPage({ searchParams }: Props) {
           className="space-y-6 rounded-2xl border border-zinc-200 bg-white/95 p-6 shadow-sm md:p-8"
         >
           <label className="block space-y-1">
-            <span className="text-sm font-semibold text-zinc-700">Title</span>
+            <span className="text-sm font-semibold text-zinc-700">Titolo</span>
             <input
               name="title"
               required
               maxLength={140}
-              placeholder="Example: Launch notes for internal API v2"
+              placeholder="Esempio: Note di lancio per API interna v2"
               className="w-full rounded-lg border border-zinc-300 px-4 py-3 text-lg"
             />
           </label>
@@ -91,7 +91,7 @@ export default async function NewPostPage({ searchParams }: Props) {
           <PostEditorFields />
 
           <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-sm font-semibold text-zinc-700">Link to projects (optional)</p>
+            <p className="text-sm font-semibold text-zinc-700">Collega a progetti (opzionale)</p>
             {!!projects?.length && (
               <div className="space-y-2">
                 {projects.map((project) => (
@@ -105,14 +105,14 @@ export default async function NewPostPage({ searchParams }: Props) {
                 ))}
               </div>
             )}
-            {!projects?.length && <p className="text-xs text-zinc-600">No projects yet. Create one from the Projects page.</p>}
+            {!projects?.length && <p className="text-xs text-zinc-600">Nessun progetto ancora. Creane uno dalla pagina Progetti.</p>}
           </div>
 
           <button
             type="submit"
             className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-zinc-700"
           >
-            Publish Post
+            Pubblica post
           </button>
         </form>
       </main>

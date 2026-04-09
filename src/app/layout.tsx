@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NotificationsBlockedDialog } from "../components/notifications-blocked-dialog";
+import { NotificationsPromptDialog } from "../components/notifications-prompt-dialog";
 import { PwaRegister } from "../components/pwa-register";
 import "./globals.css";
 
@@ -15,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ReiLabs",
-  description: "Internal blog with Supabase auth and Postgres",
+  description: "Blog interno con autenticazione Supabase e Postgres",
   applicationName: "ReiLabs",
   manifest: "/manifest.webmanifest",
   icons: {
@@ -49,15 +51,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const vapidKey =
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() || process.env.VAPID_PUBLIC_KEY?.trim();
+
   return (
     <html
-      lang="en"
+      lang="it"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full app-bg app-text flex flex-col">
         <PwaRegister />
+        <NotificationsBlockedDialog />
+        <NotificationsPromptDialog vapidPublicKey={vapidKey} />
         {children}
       </body>
     </html>
   );
 }
+``;
