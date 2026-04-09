@@ -15,9 +15,39 @@ export function browserSupportsPush() {
   );
 }
 
+export function getPushErrorMessage(reason: string, fallback: string) {
+  switch (reason) {
+    case "permission_denied":
+      return "Permesso notifiche negato. Riattivalo dalle impostazioni del browser.";
+    case "insecure_context":
+      return "Apri l'app su HTTPS (o su localhost) per attivare notifiche e installazione PWA.";
+    case "unsupported":
+      return "Le web push non sono disponibili in questo browser.";
+    case "missing_vapid_public_key":
+      return "Configurazione mancante: NEXT_PUBLIC_VAPID_PUBLIC_KEY non e impostata in produzione.";
+    case "Unauthorized":
+      return "Sessione non valida per salvare la subscription. Fai logout/login e riprova.";
+    case "Invalid subscription payload":
+      return "Il browser ha restituito una subscription non valida. Ricarica la pagina e riprova.";
+    case "Failed to save subscription":
+    case "subscription_save_failed":
+      return "Impossibile salvare la subscription push sul server.";
+    default:
+      return `${fallback} (${reason})`;
+  }
+}
+
+function isSecureContextForPush() {
+  return typeof window !== "undefined" && window.isSecureContext;
+}
+
 export async function registerCurrentDeviceForPush(vapidPublicKey?: string) {
   if (!browserSupportsPush()) {
     return { ok: false as const, reason: "unsupported" as const };
+  }
+
+  if (!isSecureContextForPush()) {
+    return { ok: false as const, reason: "insecure_context" as const };
   }
 
   if (!vapidPublicKey) {
@@ -68,6 +98,10 @@ export async function registerCurrentDeviceForPush(vapidPublicKey?: string) {
 export async function disableCurrentDevicePush() {
   if (!browserSupportsPush()) {
     return { ok: false as const, reason: "unsupported" as const };
+  }
+
+  if (!isSecureContextForPush()) {
+    return { ok: false as const, reason: "insecure_context" as const };
   }
 
   const registration = await navigator.serviceWorker.ready;

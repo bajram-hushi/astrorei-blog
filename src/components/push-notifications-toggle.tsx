@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   browserSupportsPush,
   disableCurrentDevicePush,
+  getPushErrorMessage,
   registerCurrentDeviceForPush,
 } from "@/lib/push-client";
 
@@ -16,6 +17,7 @@ export function PushNotificationsToggle({ initialEnabled, vapidPublicKey }: Push
   const [enabled, setEnabled] = useState(initialEnabled);
   const [busy, setBusy] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
+  const [secureContext, setSecureContext] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
   const canUsePush = useMemo(() => {
@@ -29,6 +31,7 @@ export function PushNotificationsToggle({ initialEnabled, vapidPublicKey }: Push
     }
 
     setPermission(Notification.permission);
+    setSecureContext(window.isSecureContext);
 
     const syncState = async () => {
       const registration = await navigator.serviceWorker.ready;
@@ -53,13 +56,7 @@ export function PushNotificationsToggle({ initialEnabled, vapidPublicKey }: Push
       setPermission(typeof Notification === "undefined" ? "unsupported" : Notification.permission);
 
       if (!result.ok) {
-        setMessage(
-          result.reason === "permission_denied"
-            ? "Permesso notifiche negato."
-            : result.reason === "unsupported"
-              ? "Le web push non sono disponibili in questo browser."
-              : "Impossibile attivare le notifiche push.",
-        );
+        setMessage(getPushErrorMessage(result.reason, "Impossibile attivare le notifiche push"));
         return;
       }
 
@@ -140,6 +137,8 @@ export function PushNotificationsToggle({ initialEnabled, vapidPublicKey }: Push
           ? "Il browser ha bloccato le notifiche. Devi riattivarle dalle impostazioni del sito."
           : permission === "unsupported"
             ? "Questo browser non supporta le web push."
+            : !secureContext
+              ? "Questa pagina non e in secure context: usa HTTPS oppure localhost."
             : enabled
               ? "Push attive."
               : "Push non attive."}

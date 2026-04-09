@@ -4,7 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { browserSupportsPush, registerCurrentDeviceForPush } from "@/lib/push-client";
+import {
+  browserSupportsPush,
+  getPushErrorMessage,
+  registerCurrentDeviceForPush,
+} from "@/lib/push-client";
 
 type LogoEasterEggProps = {
   vapidPublicKey?: string;
@@ -36,13 +40,7 @@ export function LogoEasterEgg({ vapidPublicKey }: LogoEasterEggProps) {
       setPermission(typeof Notification === "undefined" ? "unsupported" : Notification.permission);
 
       if (!result.ok) {
-        setToastMessage(
-          result.reason === "permission_denied"
-            ? "Hey, dovresti consentire le notifiche dalle impostazioni del browser per usare questo easter egg."
-            : result.reason === "unsupported"
-              ? "Le web push non sono disponibili in questo browser."
-              : "Impossibile attivare le notifiche push su questo dispositivo.",
-        );
+        setToastMessage(getPushErrorMessage(result.reason, "Impossibile attivare le notifiche push su questo dispositivo"));
         return;
       }
 
@@ -74,11 +72,7 @@ export function LogoEasterEgg({ vapidPublicKey }: LogoEasterEggProps) {
 
       if (!subscriptionResult.ok) {
         setToastMessage(
-          subscriptionResult.reason === "permission_denied"
-            ? "Hey, dovresti consentire le notifiche dalle impostazioni del browser per usare questo easter egg."
-            : subscriptionResult.reason === "unsupported"
-              ? "Le web push non sono disponibili in questo browser."
-              : "Impossibile attivare le notifiche push su questo dispositivo.",
+          getPushErrorMessage(subscriptionResult.reason, "Impossibile attivare le notifiche push su questo dispositivo"),
         );
         return;
       }
