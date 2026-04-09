@@ -62,7 +62,7 @@ function resolveVapidSubject() {
 }
 
 function configureWebPush() {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() || process.env.VAPID_PUBLIC_KEY?.trim();
   const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
   const subject = resolveVapidSubject();
 
@@ -177,6 +177,88 @@ export async function sendPushToUser(params: {
     .from("push_subscriptions")
     .select("id, endpoint, p256dh_key, auth_key, failure_count")
     .eq("user_id", params.userId)
+    .eq("enabled", true);
+
+  const rows = (subscriptions ?? []) as Array<{
+    id: string;
+    endpoint: string;
+    p256dh_key: string;
+    auth_key: string;
+    failure_count: number;
+  }>;
+
+  if (!rows.length) {
+    return { ok: false as const, reason: "no_subscriptions" as const };
+  }
+
+  for (const subscription of rows) {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subscription.p256dh_key,
+            auth: subscription.auth_key,
+          },
+        } satisfies PushSubscription,
+        JSON.stringify({
+          title: params.title,
+          body: params.body,
+          icon: "/icon.svg",
+          badge: "/icon.svg",
+          url: params.url || "/notifications",
+          tag: params.tag || `easter-egg-${Date.now()}`,
+        }),
+      );
+
+      await admin
+        .schema("blog")
+        .from("push_subscriptions")
+        .update({
+          last_push_sent_at: new Date().toISOString(),
+          last_seen: new Date().toISOString(),
+          failure_count: 0,
+        })
+        .eq("id", subscription.id);
+    } catch (error) {
+      const statusCode =
+        typeof error === "object" && error && "statusCode" in error ? Number(error.statusCode) : null;
+      const isInvalidSubscription = statusCode === 404 || statusCode === 410;
+
+      await admin
+        .schema("blog")
+        .from("push_subscriptions")
+        .update({
+          enabled: isInvalidSubscription ? false : true,
+          last_seen: new Date().toISOString(),
+          failure_count: subscription.failure_count + 1,
+        })
+        .eq("id", subscription.id);
+    }
+  }
+
+  return { ok: true as const };
+}
+
+export async function sendPushToAllUsers(params: {
+  title: string;
+  body: string;
+  url?: string;
+  tag?: string;
+}) {
+  if (!configureWebPush()) {
+    return { ok: false as const, reason: "missing_vapid" as const };
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return { ok: false as const, reason: "missing_admin" as const };
+  }
+
+  const { data: subscriptions } = await admin
+    .schema("blog")
+    .from("push_subscriptions")
+    .select("id, endpoint, p256dh_key, auth_key, failure_count")
     .eq("enabled", true);
 
   const rows = (subscriptions ?? []) as Array<{
