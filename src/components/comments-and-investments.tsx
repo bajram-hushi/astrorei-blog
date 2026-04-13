@@ -97,15 +97,16 @@ export function CommentsAndInvestments({
     const children = childrenMap.get(comment.id) ?? [];
     const score = scoreMap[comment.id] ?? 0;
     const userVote = userVoteMap[comment.id] ?? 0;
+    const indent = Math.min(depth * 10, 28);
 
     return (
       <article
         key={comment.id}
-        className="rounded-md border border-zinc-200 bg-white p-2.5"
-        style={{ marginLeft: `${Math.min(depth * 14, 72)}px` }}
+        className="rounded-md border border-zinc-200 bg-white p-2.5 sm:p-3"
+        style={{ marginLeft: `${indent}px` }}
       >
-        <div className="flex gap-2.5">
-          <div className="flex flex-col items-center gap-0.5">
+        <div className="flex gap-2 sm:gap-2.5">
+          <div className="flex shrink-0 flex-col items-center gap-0.5">
             <form action={voteComment}>
               <input type="hidden" name="post_id" value={postId} />
               <input type="hidden" name="comment_id" value={comment.id} />
@@ -134,7 +135,7 @@ export function CommentsAndInvestments({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 text-[11px] text-zinc-600">
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-zinc-600">
               <Link
                 href={comment.author_id === userId ? "/profile" : `/user/${comment.author_id}`}
                 className="flex items-center gap-1 hover:underline"
@@ -243,7 +244,7 @@ export function CommentsAndInvestments({
         )}
       </section>
 
-      <section className="mt-8 rounded-lg border border-zinc-200 bg-white p-6">
+      <section className="mt-8 rounded-lg border border-zinc-200 bg-white p-4 sm:p-6">
         <h2 className="text-xl font-semibold">Commenti</h2>
 
         <form action={addComment} className="mt-3 space-y-2">

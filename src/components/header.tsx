@@ -39,8 +39,8 @@ export async function Header() {
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3">
         <LogoEasterEgg vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()} />
 
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/profile" className="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-zinc-100">
+        <div className="flex items-center gap-2 text-sm sm:gap-3">
+          <Link href="/profile" className="hidden min-w-0 items-center gap-2 rounded-md px-1 py-1 hover:bg-zinc-100 sm:flex">
             {resolved.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -55,16 +55,10 @@ export async function Header() {
             )}
             <span className="hidden text-zinc-600 sm:inline">{resolved.username}</span>
           </Link>
-          <Link
-            href="/new"
-            className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100"
-          >
+          <Link href="/new" className="hidden rounded-md border border-zinc-300 px-3 py-1.5 text-xs hover:bg-zinc-100 sm:inline-flex sm:text-sm">
             Nuovo post
-            </Link>
-          <Link
-            href="/projects"
-            className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100"
-          >
+          </Link>
+          <Link href="/projects" className="hidden rounded-md border border-zinc-300 px-3 py-1.5 text-xs hover:bg-zinc-100 sm:inline-flex sm:text-sm">
             Progetti
           </Link>
           <Link
@@ -95,10 +89,10 @@ export async function Header() {
               </span>
             )}
           </Link>
-          <form action={signOut}>
+          <form action={signOut} className="hidden sm:block">
             <button
               type="submit"
-              className="rounded-md bg-zinc-900 px-3 py-1.5 text-white hover:bg-zinc-700"
+              className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs text-white hover:bg-zinc-700 sm:text-sm"
             >
               Esci
             </button>

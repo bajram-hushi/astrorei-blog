@@ -83,22 +83,14 @@ export default async function Home({ searchParams }: Props) {
             {evalState.text}
           </p>
         )}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold">Post recenti</h1>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/projects"
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100"
-            >
-              Progetti
-            </Link>
-            <Link
-              href="/new"
-              className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
-            >
-              Crea post
-            </Link>
-          </div>
+          <Link
+            href="/new"
+            className="shrink-0 rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
+          >
+            Crea post
+          </Link>
         </div>
 
         <div className="space-y-4">
@@ -135,7 +127,7 @@ export default async function Home({ searchParams }: Props) {
                   </button>
                 </form>
               )}
-              <div className="mt-2 flex items-center gap-2 text-sm text-zinc-600">
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
                 <Link
                   href={
                     post.author_id === user?.id

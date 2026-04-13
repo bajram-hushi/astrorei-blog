@@ -18,7 +18,7 @@ export function ProjectStatusDialog({ projectId, currentStatus }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+        className="inline-flex w-full justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 sm:w-auto"
       >
         Update status
       </button>
@@ -26,7 +26,7 @@ export function ProjectStatusDialog({ projectId, currentStatus }: Props) {
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-xl border border-zinc-200 bg-white p-5 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <h3 className="text-base font-semibold text-zinc-900">Update project status</h3>
               <button
                 type="button"
@@ -66,7 +66,7 @@ export function ProjectStatusDialog({ projectId, currentStatus }: Props) {
                 />
               </label>
 
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center">
                 <button
                   type="submit"
                   className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-zinc-700"

@@ -18,6 +18,11 @@ body {
   font-family: var(--font-geist-sans), sans-serif;
 }
 
+.prose,
+.notion-editor {
+  overflow-wrap: anywhere;
+}
+
 .app-bg {
   background:
     radial-gradient(circle at 5% 0%, #e6f4ff 0%, rgba(230, 244, 255, 0) 35%),
@@ -100,6 +105,10 @@ body {
   border-radius: 0.35rem;
   padding: 0.12rem 0.35rem;
   font-size: 0.9em;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 .prose pre {
@@ -114,12 +123,23 @@ body {
   background: transparent;
   color: inherit;
   padding: 0;
+  max-width: none;
+  white-space: inherit;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .prose img {
   max-width: 100%;
   height: auto;
   border-radius: 0.5rem;
+}
+
+.prose table,
+.notion-editor table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .notion-editor {
@@ -164,6 +184,10 @@ body {
   border-radius: 0.35rem;
   padding: 0.1rem 0.35rem;
   font-size: 0.9em;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 .notion-editor pre {
@@ -179,6 +203,10 @@ body {
   background: transparent;
   padding: 0;
   color: inherit;
+  max-width: none;
+  white-space: inherit;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .notion-editor ul[data-type="taskList"] {

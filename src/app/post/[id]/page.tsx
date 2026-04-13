@@ -126,9 +126,9 @@ export default async function PostPage({ params, searchParams }: Props) {
             {investState.text}
           </p>
         )}
-        <article className="rounded-lg border border-zinc-200 bg-white p-6">
-          <h1 className="text-3xl font-bold tracking-tight">{post.title}</h1>
-          <div className="mt-2 flex items-center gap-2 text-sm text-zinc-600">
+        <article className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{post.title}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
             <Link
               href={post.author_id === user?.id ? "/profile" : `/user/${post.author_id}`}
               className="flex items-center gap-1.5 hover:underline"

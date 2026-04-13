@@ -54,15 +54,15 @@ export default async function NewPostPage({ searchParams }: Props) {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="mx-auto w-full max-w-[1400px] px-4 py-10 md:px-8">
-        <div className="mb-6 flex items-center justify-between">
+      <main className="mx-auto w-full max-w-350 px-4 py-10 md:px-8">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Crea nuovo post</h1>
             <p className="mt-1 text-sm text-zinc-600">
               Scrivi per il tuo team interno con markdown o testo arricchito.
             </p>
           </div>
-          <Link href="/" className="text-sm text-zinc-700 hover:underline">
+          <Link href="/" className="inline-flex w-fit text-sm text-zinc-700 hover:underline">
             Torna ai post
           </Link>
         </div>
@@ -75,7 +75,7 @@ export default async function NewPostPage({ searchParams }: Props) {
 
         <form
           action={createPost}
-          className="space-y-6 rounded-2xl border border-zinc-200 bg-white/95 p-6 shadow-sm md:p-8"
+          className="space-y-6 rounded-2xl border border-zinc-200 bg-white/95 p-4 shadow-sm sm:p-6 md:p-8"
         >
           <label className="block space-y-1">
             <span className="text-sm font-semibold text-zinc-700">Titolo</span>
@@ -95,9 +95,9 @@ export default async function NewPostPage({ searchParams }: Props) {
             {!!projects?.length && (
               <div className="space-y-2">
                 {projects.map((project) => (
-                  <label key={project.id} className="flex items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm">
+                  <label key={project.id} className="flex flex-col items-start gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <span>{project.title}</span>
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-2 self-end sm:self-auto">
                       <span className="rounded-full border border-zinc-300 px-2 py-0.5 text-xs text-zinc-600">{project.status}</span>
                       <input type="checkbox" name="project_ids" value={project.id} className="h-4 w-4" />
                     </span>

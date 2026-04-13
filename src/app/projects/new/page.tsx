@@ -49,12 +49,12 @@ export default async function NewProjectPage({ searchParams }: Props) {
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto w-full max-w-4xl px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Crea progetto</h1>
             <p className="text-sm text-zinc-600">Definisci un concept di progetto e fallo evolvere attraverso stati chiari.</p>
           </div>
-          <Link href="/projects" className="text-sm text-zinc-700 hover:underline">
+          <Link href="/projects" className="inline-flex w-fit text-sm text-zinc-700 hover:underline">
             Torna ai progetti
           </Link>
         </div>
@@ -65,7 +65,7 @@ export default async function NewProjectPage({ searchParams }: Props) {
           </p>
         )}
 
-        <form action={createProject} className="space-y-5 rounded-2xl border border-zinc-200 bg-white p-6">
+        <form action={createProject} className="space-y-5 rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6">
           <label className="block space-y-1">
             <span className="text-sm font-semibold text-zinc-700">Titolo</span>
             <input

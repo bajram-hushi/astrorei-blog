@@ -84,12 +84,12 @@ export default async function EditProjectPage({ params, searchParams }: Props) {
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto w-full max-w-4xl px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Modifica progetto</h1>
             <p className="text-sm text-zinc-600">Solo il proprietario del progetto può aggiornare i dettagli.</p>
           </div>
-          <Link href={`/projects/${project.id}`} className="text-sm text-zinc-700 hover:underline">
+          <Link href={`/projects/${project.id}`} className="inline-flex w-fit text-sm text-zinc-700 hover:underline">
             Torna al progetto
           </Link>
         </div>
@@ -100,7 +100,7 @@ export default async function EditProjectPage({ params, searchParams }: Props) {
           </p>
         )}
 
-        <form action={updateProjectDetails} className="space-y-5 rounded-2xl border border-zinc-200 bg-white p-6">
+        <form action={updateProjectDetails} className="space-y-5 rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6">
           <input type="hidden" name="project_id" value={project.id} />
 
           <label className="block space-y-1">

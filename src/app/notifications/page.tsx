@@ -95,7 +95,7 @@ export default async function NotificationsPage() {
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto w-full max-w-3xl px-4 py-8">
-        <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Notifiche</h1>
             <p className="text-sm text-zinc-600">
@@ -107,9 +107,9 @@ export default async function NotificationsPage() {
             <form action={markAllNotificationsRead}>
               <button
                 type="submit"
-                className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100"
+                className="inline-flex w-fit rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100"
               >
-                `` Segna tutti come letti ({unreadCount})
+                Segna tutti come letti ({unreadCount})
               </button>
             </form>
           )}
@@ -143,7 +143,7 @@ export default async function NotificationsPage() {
                   key={row.id}
                   className={`rounded-lg border p-4 ${row.read_at ? "border-zinc-200 bg-white" : "border-zinc-300 bg-zinc-50"}`}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-sm text-zinc-800">{message}</p>
                       <p className="mt-1 text-xs text-zinc-500">

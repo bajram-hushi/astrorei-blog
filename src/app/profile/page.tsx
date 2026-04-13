@@ -80,10 +80,10 @@ export default async function ProfilePage({ searchParams }: Props) {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="mx-auto w-full max-w-3xl px-4 py-8 space-y-8">
+      <main className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8">
 
         {/* ── Profile header ── */}
-        <div className="flex items-center gap-5 rounded-xl border border-zinc-200 bg-white p-6">
+        <div className="flex flex-col items-start gap-4 rounded-xl border border-zinc-200 bg-white p-5 sm:flex-row sm:items-center sm:gap-5 sm:p-6">
           {resolved.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={resolved.avatarUrl} alt="Avatar profilo" className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-100" />
@@ -100,7 +100,7 @@ export default async function ProfilePage({ searchParams }: Props) {
         </div>
 
         {/* ── Activity stats ── */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           {[
             { label: "Post", value: myPosts?.length ?? 0 },
             { label: "Commenti", value: myComments?.length ?? 0 },
@@ -123,7 +123,7 @@ export default async function ProfilePage({ searchParams }: Props) {
           ) : (
             <ul className="space-y-2">
               {myPosts.map((post) => (
-                <li key={post.id} className="flex items-baseline justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3 gap-3">
+                <li key={post.id} className="flex flex-col gap-1 rounded-lg border border-zinc-200 bg-white px-4 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                   <Link href={`/post/${post.id}`} className="font-medium hover:underline truncate">
                     {post.title}
                   </Link>
@@ -147,7 +147,7 @@ export default async function ProfilePage({ searchParams }: Props) {
                 const score = commentScoreMap.get(comment.id) ?? 0;
                 return (
                   <li key={comment.id} className="rounded-lg border border-zinc-200 bg-white px-4 py-3">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <Link href={`/post/${comment.post_id}`} className="text-xs font-medium text-zinc-500 hover:underline">
                         su: {postTitle}
                       </Link>
@@ -177,7 +177,7 @@ export default async function ProfilePage({ searchParams }: Props) {
         {/* ── Edit profile ── */}
         <section>
           <details className="group rounded-xl border border-zinc-200 bg-white">
-            <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold select-none">
+            <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold select-none">
               Modifica profilo
               <svg className="h-4 w-4 text-zinc-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

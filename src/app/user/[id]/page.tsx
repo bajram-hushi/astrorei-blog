@@ -84,10 +84,10 @@ export default async function UserProfilePage({ params }: Props) {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="mx-auto w-full max-w-3xl px-4 py-8 space-y-8">
+      <main className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8">
 
         {/* ── Profile header ── */}
-        <div className="flex items-center gap-5 rounded-xl border border-zinc-200 bg-white p-6">
+        <div className="flex flex-col items-start gap-4 rounded-xl border border-zinc-200 bg-white p-5 sm:flex-row sm:items-center sm:gap-5 sm:p-6">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt={`Avatar di ${username}`} className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-100" />
@@ -103,7 +103,7 @@ export default async function UserProfilePage({ params }: Props) {
         </div>
 
         {/* ── Stats ── */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           {[
             { label: "Post", value: posts?.length ?? 0 },
             { label: "Commenti", value: comments?.length ?? 0 },
@@ -126,7 +126,7 @@ export default async function UserProfilePage({ params }: Props) {
           ) : (
             <ul className="space-y-2">
               {posts.map((post) => (
-                <li key={post.id} className="flex items-baseline justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3 gap-3">
+                <li key={post.id} className="flex flex-col gap-1 rounded-lg border border-zinc-200 bg-white px-4 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                   <Link href={`/post/${post.id}`} className="font-medium hover:underline truncate">
                     {post.title}
                   </Link>
@@ -150,7 +150,7 @@ export default async function UserProfilePage({ params }: Props) {
                 const score = commentScoreMap.get(comment.id) ?? 0;
                 return (
                   <li key={comment.id} className="rounded-lg border border-zinc-200 bg-white px-4 py-3">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <Link href={`/post/${comment.post_id}`} className="text-xs font-medium text-zinc-500 hover:underline">
                         su: {postTitle}
                       </Link>

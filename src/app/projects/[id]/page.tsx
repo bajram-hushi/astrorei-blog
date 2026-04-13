@@ -211,42 +211,42 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
           </p>
         )}
 
-        <div className="mb-6 flex items-center justify-between">
-          <div>
+        <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
             <h1 className="text-3xl font-bold tracking-tight">{project.title}</h1>
             <p className="mt-1 text-sm text-zinc-600">
               Proprietario: {owner?.username ?? owner?.email ?? "Sconosciuto"} · Creato il {new Date(project.created_at).toLocaleDateString()}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             {canEdit && (
               <>
                 <Link
                   href={`/projects/${project.id}/edit`}
-                  className="inline-flex rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+                  className="inline-flex w-full justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 sm:w-auto"
                 >
                   Modifica dettagli progetto
                 </Link>
                 <ProjectStatusDialog projectId={project.id} currentStatus={project.status} />
               </>
             )}
-            <Link href="/projects" className="text-sm text-zinc-700 hover:underline">
+            <Link href="/projects" className="inline-flex w-fit text-sm text-zinc-700 hover:underline">
               Torna ai progetti
             </Link>
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <section className="rounded-lg border border-zinc-200 bg-white p-5">
+        <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+          <section className="min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-white p-4 sm:p-5">
             {project.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={project.image_url}
                 alt={`Copertina ${project.title}`}
-                className="mb-4 h-56 w-full rounded-lg object-cover"
+                className="mb-4 h-44 w-full rounded-lg object-cover sm:h-56"
               />
             )}
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold">Riepilogo</h2>
               <span className="rounded-full border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700">
                 {project.status}
@@ -262,20 +262,20 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
             <div className="mt-4 space-y-1 text-sm">
               {project.website_url && (
                 <p>
-                  Sito web: <a href={project.website_url} target="_blank" rel="noreferrer" className="text-zinc-900 underline">{project.website_url}</a>
+                  Sito web: <a href={project.website_url} target="_blank" rel="noreferrer" className="break-all text-zinc-900 underline">{project.website_url}</a>
                 </p>
               )}
               {project.github_repo_url && (
                 <p>
-                  GitHub: <a href={project.github_repo_url} target="_blank" rel="noreferrer" className="text-zinc-900 underline">{project.github_repo_url}</a>
+                  GitHub: <a href={project.github_repo_url} target="_blank" rel="noreferrer" className="break-all text-zinc-900 underline">{project.github_repo_url}</a>
                 </p>
               )}
             </div>
 
           </section>
 
-          <section className="space-y-6">
-            <div className="rounded-lg border border-zinc-200 bg-white p-5">
+          <section className="min-w-0 space-y-6">
+            <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5">
               <h2 className="text-lg font-semibold">Post collegati</h2>
               <div className="mt-3 space-y-3">
                 {links?.map((link) => {
@@ -298,7 +298,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
               </div>
             </div>
 
-            <div className="rounded-lg border border-zinc-200 bg-white p-5">
+            <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5">
               <h2 className="text-lg font-semibold">Storico stati</h2>
               <div className="mt-3 space-y-3">
                 {history?.map((entry) => {
@@ -319,7 +319,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
               </div>
             </div>
 
-            <div className="rounded-lg border border-zinc-200 bg-white p-5">
+            <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5">
               <h2 className="text-lg font-semibold">Storico modifiche</h2>
               <div className="mt-3 space-y-3">
                 {editHistory?.map((entry) => {
@@ -330,7 +330,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
 
                   return (
                     <div key={entry.id} className="rounded-md border border-zinc-200 p-3">
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-sm font-medium text-zinc-800">
                           {changedFields.length} campo{changedFields.length === 1 ? "" : "i"} aggiornato{changedFields.length === 1 ? "" : "i"}
                         </p>

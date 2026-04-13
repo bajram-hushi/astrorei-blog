@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { NotificationsBlockedDialog } from "../components/notifications-blocked-dialog";
 import { NotificationsPromptDialog } from "../components/notifications-prompt-dialog";
 import { PwaRegister } from "../components/pwa-register";
+import { MobileBottomNav } from "../components/mobile-bottom-nav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -63,7 +64,8 @@ export default function RootLayout({
         <PwaRegister />
         <NotificationsBlockedDialog />
         <NotificationsPromptDialog vapidPublicKey={vapidKey} />
-        {children}
+        <div className="flex-1 pb-20 sm:pb-0">{children}</div>
+        <MobileBottomNav />
       </body>
     </html>
   );

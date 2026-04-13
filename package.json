@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3333",
+    "dev": "NEXT_DISABLE_TURBOPACK=1 WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=1 next dev -p 3333",
     "build": "next build",
     "start": "next start -p 3333",
     "lint": "eslint",
