@@ -8,6 +8,7 @@ import { evaluateAngelInvestment } from "@/lib/angel-investor";
 import { getUserInvestmentSummary } from "@/lib/investments";
 import { sendNewPostEmail } from "@/lib/email";
 import { sendPushNotificationsForNotifications } from "@/lib/push";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 async function requireAllowedUser() {
   const supabase = await createClient();
@@ -624,11 +625,25 @@ export async function addComment(formData: FormData) {
     }
 
     if (notifications.length) {
-      const { data: insertedNotifications } = await supabase
+      let { data: insertedNotifications, error: insertNotificationsError } = await supabase
         .schema("blog")
         .from("notifications")
         .insert(notifications)
         .select("id, recipient_id, actor_id, type, post_id, comment_id");
+
+      if (insertNotificationsError) {
+        const admin = createAdminClient();
+        if (admin) {
+          const adminInsert = await admin
+            .schema("blog")
+            .from("notifications")
+            .insert(notifications)
+            .select("id, recipient_id, actor_id, type, post_id, comment_id");
+
+          insertedNotifications = adminInsert.data;
+          insertNotificationsError = adminInsert.error;
+        }
+      }
 
       if (insertedNotifications?.length) {
         await sendPushNotificationsForNotifications(insertedNotifications);
