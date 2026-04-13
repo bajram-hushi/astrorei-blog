@@ -1,14 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Nunito_Sans, Darker_Grotesque, Geist_Mono } from "next/font/google";
 import { NotificationsBlockedDialog } from "../components/notifications-blocked-dialog";
 import { NotificationsPromptDialog } from "../components/notifications-prompt-dialog";
 import { PwaRegister } from "../components/pwa-register";
 import { MobileBottomNav } from "../components/mobile-bottom-nav";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const nunitoSans = Nunito_Sans({
+  variable: "--font-nunito-sans",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const darkerGrotesque = Darker_Grotesque({
+  variable: "--font-darker-grotesque",
   subsets: ["latin"],
+  weight: ["700", "800", "900"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -44,7 +53,7 @@ export const metadata: Metadata = {
 export const runtime = "nodejs";
 
 export const viewport: Viewport = {
-  themeColor: "#f6f7fb",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -58,7 +67,7 @@ export default function RootLayout({
   return (
     <html
       lang="it"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${nunitoSans.variable} ${darkerGrotesque.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full app-bg app-text flex flex-col">
         <PwaRegister />

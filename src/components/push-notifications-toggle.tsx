@@ -94,56 +94,32 @@ export function PushNotificationsToggle({ initialEnabled, vapidPublicKey }: Push
   };
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4">
+    <>
       {permission === "default" && !enabled && canUsePush && vapidPublicKey && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-semibold">Attiva le notifiche push</p>
-              <p className="mt-1 text-amber-900">
-                Consenti le notifiche per ricevere subito commenti e risposte senza tenere aperta la pagina.
-              </p>
+        <div className="rounded-lg border border-zinc-200 bg-white p-4">
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold">Attiva le notifiche push</p>
+                <p className="mt-1 text-amber-900">
+                  Consenti le notifiche per ricevere subito commenti e risposte
+                  senza tenere aperta la pagina.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={enablePush}
+                disabled={busy}
+                className="rounded-md bg-amber-950 px-3 py-2 text-sm font-medium text-white hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {busy ? "Richiesta in corso..." : "Consenti notifiche"}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={enablePush}
-              disabled={busy}
-              className="rounded-md bg-amber-950 px-3 py-2 text-sm font-medium text-white hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {busy ? "Richiesta in corso..." : "Consenti notifiche"}
-            </button>
           </div>
+
+          {message && <p className="mt-2 text-xs text-zinc-700">{message}</p>}
         </div>
       )}
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-900">Web push</h2>
-          <p className="text-sm text-zinc-600">
-            Ricevi notifiche su questo dispositivo quando qualcuno commenta un tuo post o risponde a un tuo commento.
-          </p>
-        </div>
-        <button
-          type="button"
-          disabled={busy || permission === "unsupported" || (!enabled && !vapidPublicKey)}
-          onClick={enabled ? disablePush : enablePush}
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {busy ? "Aggiornamento..." : enabled ? "Disattiva push" : "Attiva push"}
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-zinc-500">
-        {permission === "denied"
-          ? "Il browser ha bloccato le notifiche. Devi riattivarle dalle impostazioni del sito."
-          : permission === "unsupported"
-            ? "Questo browser non supporta le web push."
-            : !secureContext
-              ? "Questa pagina non e in secure context: usa HTTPS oppure localhost."
-            : enabled
-              ? "Push attive."
-              : "Push non attive."}
-      </p>
-      {message && <p className="mt-2 text-xs text-zinc-700">{message}</p>}
-    </div>
+    </>
   );
 }
