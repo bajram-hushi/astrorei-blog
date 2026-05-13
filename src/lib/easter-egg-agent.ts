@@ -15,13 +15,18 @@ function randomFallbackMessage() {
 
 export async function generateEasterEggMessage() {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4.1-mini";
+  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  const project = process.env.OPENAI_PROJECT?.trim();
 
   if (!apiKey) {
     return randomFallbackMessage();
   }
 
-  const client = new OpenAI({ apiKey, project: "proj_ehmvMgAWu3TwCfVLOtO8i7KV" });
+  const clientConfig: { apiKey: string; project?: string } = { apiKey };
+  if (project) {
+    clientConfig.project = project;
+  }
+  const client = new OpenAI(clientConfig);
 
   try {
     const completion = await client.chat.completions.create({

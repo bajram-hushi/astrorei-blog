@@ -77,7 +77,11 @@ export async function POST(request: Request) {
     const result = await generateBlogPost(posts, projects);
 
     if (!result) {
-        return NextResponse.json({ error: "Generation failed" }, { status: 502 });
+        console.error("blog-writer: generateBlogPost returned null - check logs for OpenAI errors");
+        return NextResponse.json(
+            { error: "Generation failed", detail: "AI generation returned no result. Check server logs for details." },
+            { status: 502 }
+        );
     }
 
     const authorEmail = process.env.BLOG_WRITER_AUTHOR_EMAIL?.trim() ?? "rei@astrorei.io";

@@ -24,15 +24,20 @@ function clip(input: string, max = 8000) {
 
 export async function evaluateAngelInvestment(input: EvaluateInput): Promise<AngelInvestmentResult | null> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4.1-mini";
+  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  const project = process.env.OPENAI_PROJECT?.trim();
 
-  console.log("Evaluating angel investment with model:", model);
+  console.log(`Evaluating angel investment with model: ${model}${project ? ` (project: ${project})` : ""}`);
 
   if (!apiKey) {
     return null;
   }
 
-    const client = new OpenAI({ apiKey, project: "proj_ehmvMgAWu3TwCfVLOtO8i7KV" });
+  const clientConfig: { apiKey: string; project?: string } = { apiKey };
+  if (project) {
+    clientConfig.project = project;
+  }
+  const client = new OpenAI(clientConfig);
 
   const normalizedContent = input.contentFormat === "richtext" ? stripHtml(input.content) : input.content;
 

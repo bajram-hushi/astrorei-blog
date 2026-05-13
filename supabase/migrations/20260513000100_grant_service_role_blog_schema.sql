@@ -6,3 +6,4 @@ grant all on all sequences in schema blog to service_role;
 -- Ensure future tables are also covered
 alter default privileges in schema blog grant all on tables to service_role;
 alter default privileges in schema blog grant all on sequences to service_role;
+``

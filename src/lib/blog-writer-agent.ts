@@ -1,6 +1,4 @@
 import OpenAI from "openai";
-import fs from "fs";
-import path from "path";
 
 type PostSummary = {
   title: string;
@@ -31,23 +29,23 @@ function stripHtml(input: string): string {
   return input.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function readDocFile(relativePath: string): string {
-  try {
-    return fs.readFileSync(path.join(process.cwd(), relativePath), "utf-8");
-  } catch {
-    return "";
-  }
-}
-
 export async function generateBlogPost(posts: PostSummary[], projects: ProjectSummary[]): Promise<BlogWriterResult | null> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4.1-mini";
+  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  const project = process.env.OPENAI_PROJECT?.trim();
 
   if (!apiKey) {
+    console.error("blog-writer-agent: OPENAI_API_KEY not configured");
     return null;
   }
 
-  const client = new OpenAI({ apiKey, project: "proj_ehmvMgAWu3TwCfVLOtO8i7KV" });
+  const clientConfig: { apiKey: string; project?: string } = { apiKey };
+  if (project) {
+    clientConfig.project = project;
+  }
+  const client = new OpenAI(clientConfig);
+
+  console.log(`blog-writer-agent: using model ${model}${project ? ` (project: ${project})` : ""}`);
   const recentPostsSummary = posts
     .slice(0, 8)
     .map((p, i) => {
@@ -112,17 +110,24 @@ export async function generateBlogPost(posts: PostSummary[], projects: ProjectSu
     });
 
     const raw = completion.choices[0]?.message?.content?.trim();
-    if (!raw) return null;
+    if (!raw) {
+      console.error("blog-writer-agent: OpenAI returned empty response");
+      return null;
+    }
 
       const parsed = JSON.parse(raw) as { title?: string; content?: string; related_project_ids?: unknown };
-    if (!parsed.title || !parsed.content) return null;
+    if (!parsed.title || !parsed.content) {
+      console.error("blog-writer-agent: parsed JSON missing title or content", { parsed });
+      return null;
+    }
 
       const relatedIds = Array.isArray(parsed.related_project_ids)
           ? (parsed.related_project_ids as unknown[]).filter((x): x is string => typeof x === "string")
           : [];
 
       return { title: parsed.title, content: parsed.content, related_project_ids: relatedIds };
-  } catch {
+  } catch (error) {
+    console.error("blog-writer-agent: generation failed", error);
     return null;
   }
 }
