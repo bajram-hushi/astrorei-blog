@@ -9,6 +9,7 @@ import { getUserInvestmentSummary } from "@/lib/investments";
 import { sendNewPostEmail } from "@/lib/email";
 import { sendPushNotificationsForNotifications } from "@/lib/push";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { shouldRespondToComment, shouldVoteOnComment } from "@/lib/comment-responder-agent";
 
 async function requireAllowedUser() {
   const supabase = await createClient();
@@ -653,6 +654,149 @@ export async function addComment(formData: FormData) {
         revalidatePath(notification.recipient_id === user.id ? "/profile" : `/user/${notification.recipient_id}`);
       }
       revalidatePath("/notifications");
+    }
+  }
+
+  // Check if Rei should respond to this comment
+  const botUserId = process.env.BLOG_WRITER_BOT_USER_ID?.trim();
+  const botEmail = process.env.BLOG_WRITER_AUTHOR_EMAIL?.trim() || "rei@astrorei.io";
+  
+  // Determine if this comment warrants a Rei response:
+  // 1. Mentions "rei" directly
+  // 2. Is a reply to Rei's comment
+  // 3. Is a comment on Rei's post
+  const mentionsRei = body.toLowerCase().includes("rei");
+  const isReplyingToRei = parentCommentAuthorId === botUserId;
+  const isCommentingOnReiPost = postOwner?.author_id === botUserId;
+  
+  const shouldCheckForResponse = botUserId && (mentionsRei || isReplyingToRei || isCommentingOnReiPost);
+  
+  if (shouldCheckForResponse) {
+    try {
+      // Fetch post content
+      const { data: post } = await supabase
+        .schema("blog")
+        .from("posts")
+        .select("id, title, content, author_id")
+        .eq("id", postId)
+        .single();
+
+      if (post) {
+        // Fetch comment thread (all comments in this post for context)
+        const { data: allComments } = await supabase
+          .schema("blog")
+          .from("comments")
+          .select("id, body, author_id, author_email, created_at, parent_id")
+          .eq("post_id", postId)
+          .order("created_at", { ascending: true });
+
+        const commentChain = (allComments || []).map((c: { id: string; body: string; author_id: string; author_email: string; created_at: string }) => ({
+          id: c.id,
+          body: c.body,
+          author: c.author_email,
+          authorId: c.author_id,
+          created_at: c.created_at,
+        }));
+
+        const decision = await shouldRespondToComment({
+          commentId: insertedComment.id,
+          commentBody: body,
+          commentAuthor: user.email || "unknown",
+          postId: post.id,
+          postTitle: post.title,
+          postContent: post.content,
+          postAuthorId: post.author_id,
+          parentCommentAuthorId: parentCommentAuthorId || undefined,
+          commentChain,
+        });
+
+        if (decision.shouldRespond && decision.response) {
+          console.log(`comment-responder: Rei will respond to comment ${insertedComment.id}`);
+          
+          const admin = createAdminClient();
+          if (admin) {
+            await admin
+              .schema("blog")
+              .from("comments")
+              .insert({
+                post_id: postId,
+                parent_id: insertedComment.id,
+                body: decision.response,
+                author_id: botUserId,
+                author_email: botEmail,
+              });
+          }
+        } else {
+          console.log(`comment-responder: Rei will not respond - ${decision.reasoning}`);
+        }
+      }
+    } catch (error) {
+      console.error("comment-responder: failed to process comment", error);
+      // Don't block the user's comment - fail silently
+    }
+  }
+
+  // Rei votes on comments based on quality/relevance
+  if (botUserId && user.id !== botUserId) {
+    try {
+      const { data: post } = await supabase
+        .schema("blog")
+        .from("posts")
+        .select("id, title, content, author_id")
+        .eq("id", postId)
+        .single();
+
+      if (post) {
+        const { data: allComments } = await supabase
+          .schema("blog")
+          .from("comments")
+          .select("id, body, author_id, author_email, created_at, parent_id")
+          .eq("post_id", postId)
+          .order("created_at", { ascending: true });
+
+        const commentChain = (allComments || []).map((c: { id: string; body: string; author_id: string; author_email: string; created_at: string }) => ({
+          id: c.id,
+          body: c.body,
+          author: c.author_email,
+          authorId: c.author_id,
+          created_at: c.created_at,
+        }));
+
+        const voteDecision = await shouldVoteOnComment({
+          commentBody: body,
+          commentAuthor: user.email || "unknown",
+          postId: post.id,
+          postTitle: post.title,
+          postContent: post.content,
+          postAuthorId: post.author_id,
+          parentCommentAuthorId: parentCommentAuthorId || undefined,
+          commentChain,
+        });
+
+        if (voteDecision.shouldVote && voteDecision.vote) {
+          console.log(`comment-voter: Rei will vote ${voteDecision.vote > 0 ? "+" : ""}${voteDecision.vote} on comment ${insertedComment.id} - ${voteDecision.reasoning}`);
+          
+          const admin = createAdminClient();
+          if (admin) {
+            // Insert or update vote
+            await admin
+              .schema("blog")
+              .from("comment_votes")
+              .upsert({
+                comment_id: insertedComment.id,
+                user_id: botUserId,
+                vote: voteDecision.vote,
+              }, {
+                onConflict: "comment_id,user_id",
+              });
+          }
+        } else {
+          console.log(`comment-voter: Rei will not vote - ${voteDecision.reasoning}`);
+        }
+      }
+    } catch (error) {
+      console.error("comment-voter: failed to process vote", error);
+      // Don't block the user's comment - fail silently
     }
   }
 
