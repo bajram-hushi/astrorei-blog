@@ -74,6 +74,8 @@ export async function POST(request: Request) {
         status: p.status,
     }));
 
+    console.log(`blog-writer route: fetched ${posts.length} posts and ${projects.length} projects`);
+
     const result = await generateBlogPost(posts, projects);
 
     if (!result) {

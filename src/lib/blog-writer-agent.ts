@@ -97,6 +97,8 @@ export async function generateBlogPost(posts: PostSummary[], projects: ProjectSu
     recentPostsSummary || "(no posts yet)",
   ].join("\n");
 
+  console.log(`blog-writer-agent: systemPrompt length=${systemPrompt.length}, userPrompt length=${userPrompt.length}`);
+
   try {
     const completion = await client.chat.completions.create({
       model,
@@ -105,19 +107,30 @@ export async function generateBlogPost(posts: PostSummary[], projects: ProjectSu
         { role: "user", content: userPrompt },
       ],
       temperature: 0.85,
-      max_tokens: 1200,
+      max_completion_tokens: 1200,
       response_format: { type: "json_object" },
     });
 
+    console.log(`blog-writer-agent: completion received, choices=${completion.choices?.length}`);
+
     const raw = completion.choices[0]?.message?.content?.trim();
     if (!raw) {
-      console.error("blog-writer-agent: OpenAI returned empty response");
+      console.error("blog-writer-agent: OpenAI returned empty response", { 
+        choices: completion.choices,
+        finishReason: completion.choices[0]?.finish_reason 
+      });
       return null;
     }
 
+    console.log(`blog-writer-agent: raw response length=${raw.length}`);
+
       const parsed = JSON.parse(raw) as { title?: string; content?: string; related_project_ids?: unknown };
     if (!parsed.title || !parsed.content) {
-      console.error("blog-writer-agent: parsed JSON missing title or content", { parsed });
+      console.error("blog-writer-agent: parsed JSON missing title or content", { 
+        hasTitle: !!parsed.title,
+        hasContent: !!parsed.content,
+        keys: Object.keys(parsed)
+      });
       return null;
     }
 
@@ -125,9 +138,15 @@ export async function generateBlogPost(posts: PostSummary[], projects: ProjectSu
           ? (parsed.related_project_ids as unknown[]).filter((x): x is string => typeof x === "string")
           : [];
 
+    console.log(`blog-writer-agent: success - title="${parsed.title}", contentLength=${parsed.content.length}, relatedIds=${relatedIds.length}`);
+
       return { title: parsed.title, content: parsed.content, related_project_ids: relatedIds };
   } catch (error) {
-    console.error("blog-writer-agent: generation failed", error);
+    console.error("blog-writer-agent: generation failed", {
+      error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+    });
     return null;
   }
 }

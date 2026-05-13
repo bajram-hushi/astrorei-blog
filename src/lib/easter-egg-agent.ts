@@ -56,7 +56,7 @@ export async function generateEasterEggMessage() {
         },
       ],
       temperature: 1,
-      max_tokens: 60,
+      max_completion_tokens: 60,
     });
 
     const message = completion.choices[0]?.message?.content?.trim();
