@@ -8,6 +8,7 @@ import { BlogProfile } from "@/lib/profile";
 import { formatEurCompact } from "@/lib/currency";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { GenerateBlogPostButton } from "@/components/generate-blog-post-button";
 
 type Props = {
   searchParams: Promise<{ eval_status?: string; eval_detail?: string }>;
@@ -85,12 +86,15 @@ export default async function Home({ searchParams }: Props) {
         )}
         <div className="mb-6 flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold">Post recenti</h1>
-          <Link
-            href="/new"
-            className="shrink-0 rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
-          >
-            Crea post
-          </Link>
+          <div className="flex items-start gap-2">
+            <GenerateBlogPostButton />
+            <Link
+              href="/new"
+              className="shrink-0 rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
+            >
+              Crea post
+            </Link>
+          </div>
         </div>
 
         <div className="space-y-4">

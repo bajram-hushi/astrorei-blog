@@ -43,6 +43,7 @@ export async function sendNewPostEmail(params: NewPostEmailParams): Promise<void
     const previewHtml = params.preview;
 
   await sendEmail({
+    from: process.env.NOTIFY_EMAIL_FROM?.trim() || "ReiLabs <no-reply@astrorei.io>",
     to: recipient,
     subject: `New post created: ${params.title}`,
       html: `
