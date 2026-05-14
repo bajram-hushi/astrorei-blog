@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import sanitizeHtml from "sanitize-html";
 import { addComment, investInPost, voteComment } from "@/app/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { formatEurCompact } from "@/lib/currency";
 import { CommentEditor } from "@/components/comment-editor";
+import { MentionPopup } from "@/components/mention-popup";
 
 type CommentRow = {
   id: string;
@@ -34,12 +36,27 @@ export function CommentsAndInvestments({
   postAuthorId,
   userId,
 }: CommentsAndInvestmentsProps) {
+  const router = useRouter();
+  const popupVisibleRef = useRef(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [scoreMap, setScoreMap] = useState<Record<string, number>>({});
   const [userVoteMap, setUserVoteMap] = useState<Record<string, number>>({});
   const [profileMap, setProfileMap] = useState<Record<string, BlogProfile>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [mentionPopup, setMentionPopup] = useState<{
+    userId: string;
+    position: { x: number; y: number };
+  } | null>(null);
+
+  // Update ref when popup changes
+  useEffect(() => {
+    popupVisibleRef.current = mentionPopup !== null;
+  }, [mentionPopup]);
 
   const [communityInvestmentTotal, setCommunityInvestmentTotal] = useState(0);
   const [myPostInvestment, setMyPostInvestment] = useState(0);
@@ -108,6 +125,24 @@ export function CommentsAndInvestments({
       return () => clearTimeout(timeoutId);
     }
   }, [comments]);
+
+  // Add cursor styling to mentions
+  useEffect(() => {
+    if (typeof window === "undefined" || comments.length === 0) return;
+
+    const mentionSpans = document.querySelectorAll('span[data-type="mention"]');
+    mentionSpans.forEach((span) => {
+      span.classList.add("cursor-pointer", "rounded", "px-0.5", "-mx-0.5", "transition-colors");
+    });
+  }, [comments]);
+
+  // Handler to prevent popup from closing when hovering over it
+  const handlePopupMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  };
 
   const childrenMap = new Map<string | null, CommentRow[]>();
   for (const comment of comments) {
@@ -195,6 +230,90 @@ export function CommentsAndInvestments({
 
             <div
               className="prose prose-sm mt-1 max-w-none text-[13px] leading-5"
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (
+                  target.tagName === "SPAN" &&
+                  target.dataset.type === "mention" &&
+                  target.dataset.id
+                ) {
+                  e.preventDefault();
+                  const mentionedUserId = target.dataset.id;
+                  if (mentionedUserId === userId) {
+                    router.push("/profile");
+                  } else {
+                    router.push(`/user/${mentionedUserId}`);
+                  }
+                }
+              }}
+              onMouseOver={(e) => {
+                const target = e.target as HTMLElement;
+                if (
+                  target.tagName === "SPAN" &&
+                  target.dataset.type === "mention" &&
+                  target.dataset.id
+                ) {
+                  // Clear any pending close timeout
+                  if (closeTimeoutRef.current) {
+                    clearTimeout(closeTimeoutRef.current);
+                    closeTimeoutRef.current = null;
+                  }
+
+                  const mentionedUserId = target.dataset.id;
+                  const rect = target.getBoundingClientRect();
+
+                  // Clear any existing hover timeout
+                  if (hoverTimeoutRef.current) {
+                    clearTimeout(hoverTimeoutRef.current);
+                    hoverTimeoutRef.current = null;
+                  }
+
+                  // If popup is already visible, update immediately. Otherwise delay
+                  if (popupVisibleRef.current) {
+                    setMentionPopup({
+                      userId: mentionedUserId,
+                      position: {
+                        x: rect.left,
+                        y: rect.bottom + window.scrollY + 8,
+                      },
+                    });
+                  } else {
+                    hoverTimeoutRef.current = setTimeout(() => {
+                      setMentionPopup({
+                        userId: mentionedUserId,
+                        position: {
+                          x: rect.left,
+                          y: rect.bottom + window.scrollY + 8,
+                        },
+                      });
+                    }, 300);
+                  }
+
+                  // Add visual feedback
+                  target.classList.add("bg-blue-50");
+                }
+              }}
+              onMouseOut={(e) => {
+                const target = e.target as HTMLElement;
+                if (
+                  target.tagName === "SPAN" &&
+                  target.dataset.type === "mention"
+                ) {
+                  // Clear hover timeout if popup hasn't shown yet
+                  if (hoverTimeoutRef.current) {
+                    clearTimeout(hoverTimeoutRef.current);
+                    hoverTimeoutRef.current = null;
+                  }
+
+                  // Schedule popup close with delay to allow moving to popup
+                  closeTimeoutRef.current = setTimeout(() => {
+                    setMentionPopup(null);
+                  }, 100);
+
+                  // Remove visual feedback
+                  target.classList.remove("bg-blue-50");
+                }
+              }}
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtml(comment.body, {
                   allowedTags: [
@@ -389,6 +508,16 @@ export function CommentsAndInvestments({
           </div>
         )}
       </section>
+
+      {/* Mention popup */}
+      {mentionPopup && (
+        <MentionPopup
+          userId={mentionPopup.userId}
+          position={mentionPopup.position}
+          onMouseEnter={handlePopupMouseEnter}
+          onClose={() => setMentionPopup(null)}
+        />
+      )}
     </>
   );
 }

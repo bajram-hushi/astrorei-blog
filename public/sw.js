@@ -1,4 +1,4 @@
-const CACHE_NAME = "reilabs-static-v1";
+const CACHE_NAME = "reilabs-static-v2";
 const STATIC_DESTINATIONS = new Set(["style", "script", "font", "image"]);
 
 function getNotificationPayload(event) {
@@ -54,6 +54,11 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Skip caching JavaScript chunks to prevent stale module issues
+  if (request.destination === "script" && url.pathname.includes("/_next/")) {
     return;
   }
 
