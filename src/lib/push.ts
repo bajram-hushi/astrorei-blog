@@ -13,7 +13,7 @@ type NotificationInsertRow = {
   id: string;
   recipient_id: string;
   actor_id: string;
-  type: "comment_on_post" | "reply_to_comment";
+  type: "comment_on_post" | "reply_to_comment" | "mention_in_comment";
   post_id: string;
   comment_id: string;
 };
@@ -82,18 +82,22 @@ function buildNotificationPayload(params: {
   const title =
     params.notification.type === "reply_to_comment"
       ? "Nuova risposta al tuo commento"
-      : "Nuovo commento sul tuo post";
+      : params.notification.type === "mention_in_comment"
+        ? "Sei stato menzionato"
+        : "Nuovo commento sul tuo post";
   const body =
     params.notification.type === "reply_to_comment"
       ? `${params.actorName} ha risposto su ${params.postTitle}`
-      : `${params.actorName} ha commentato ${params.postTitle}`;
+      : params.notification.type === "mention_in_comment"
+        ? `${params.actorName} ti ha menzionato in ${params.postTitle}`
+        : `${params.actorName} ha commentato ${params.postTitle}`;
 
   return {
     title,
     body,
     icon: "/icon.svg",
     badge: "/icon.svg",
-    url: `/post/${params.notification.post_id}`,
+    url: `/post/${params.notification.post_id}#comment-${params.notification.comment_id}`,
     tag: `notification-${params.notification.id}`,
     notificationId: params.notification.id,
   };

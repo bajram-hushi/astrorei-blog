@@ -274,3 +274,16 @@ h1, h2, h3, h4, h5, h6 {
   height: 0;
   pointer-events: none;
 }
+
+.mention {
+  background-color: rgba(37, 99, 235, 0.1);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.mention:hover {
+  background-color: rgba(37, 99, 235, 0.15);
+}

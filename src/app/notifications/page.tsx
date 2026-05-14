@@ -22,7 +22,7 @@ type NotificationRow = {
   id: string;
   recipient_id: string;
   actor_id: string;
-  type: "comment_on_post" | "reply_to_comment";
+  type: "comment_on_post" | "reply_to_comment" | "mention_in_comment";
   post_id: string;
   comment_id: string;
   created_at: string;
@@ -99,8 +99,8 @@ export default async function NotificationsPage() {
           <div>
             <h1 className="text-2xl font-bold">Notifiche</h1>
             <p className="text-sm text-zinc-600">
-              Aggiornamenti su risposte ai tuoi commenti e commenti ai tuoi
-              post.
+              Aggiornamenti su risposte ai tuoi commenti, commenti ai tuoi
+              post, e menzioni nei commenti.
             </p>
           </div>
           {unreadCount > 0 && (
@@ -136,7 +136,9 @@ export default async function NotificationsPage() {
               const message =
                 row.type === "reply_to_comment"
                   ? `${actorName} ha risposto al tuo commento su ${postTitle}`
-                  : `${actorName} ha commentato il tuo post ${postTitle}`;
+                  : row.type === "mention_in_comment"
+                    ? `${actorName} ti ha menzionato in un commento su ${postTitle}`
+                    : `${actorName} ha commentato il tuo post ${postTitle}`;
 
               return (
                 <li
@@ -158,7 +160,7 @@ export default async function NotificationsPage() {
                   </div>
                   <div className="mt-3">
                     <Link
-                      href={`/post/${row.post_id}`}
+                      href={`/post/${row.post_id}#comment-${row.comment_id}`}
                       className="text-sm font-medium text-zinc-700 underline-offset-2 hover:underline"
                     >
                       Apri la discussione

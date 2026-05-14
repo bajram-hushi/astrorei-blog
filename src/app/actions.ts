@@ -592,7 +592,7 @@ export async function addComment(formData: FormData) {
     const notifications: Array<{
       recipient_id: string;
       actor_id: string;
-      type: "comment_on_post" | "reply_to_comment";
+      type: "comment_on_post" | "reply_to_comment" | "mention_in_comment";
       post_id: string;
       comment_id: string;
       parent_comment_id: string | null;
@@ -619,6 +619,30 @@ export async function addComment(formData: FormData) {
         recipient_id: parentCommentAuthorId,
         actor_id: user.id,
         type: "reply_to_comment",
+        post_id: postId,
+        comment_id: insertedComment.id,
+        parent_comment_id: parentId,
+      });
+    }
+
+    // Extract mentioned user IDs from comment body HTML
+    const mentionRegex = /<span[^>]*data-type="mention"[^>]*data-id="([^"]+)"[^>]*>/g;
+    const mentionedUserIds = new Set<string>();
+    let match;
+    while ((match = mentionRegex.exec(body)) !== null) {
+      const userId = match[1];
+      // if (userId && userId !== user.id && userId !== postAuthorId && userId !== parentCommentAuthorId) {
+      if (userId) {
+        mentionedUserIds.add(userId);
+      }
+    }
+
+    // Create mention notifications
+    for (const mentionedUserId of mentionedUserIds) {
+      notifications.push({
+        recipient_id: mentionedUserId,
+        actor_id: user.id,
+        type: "mention_in_comment",
         post_id: postId,
         comment_id: insertedComment.id,
         parent_comment_id: parentId,
